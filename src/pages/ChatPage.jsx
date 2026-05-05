@@ -1,30 +1,30 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";   // 👈 ADD THIS
 import UsersList from "../components/UsersList";
 import ChatWindow from "../components/ChatWindow";
-import { connectSocket, addUser } from "../socket";
+import { connectSocket } from "../socket";
 import api from "../api/axios";
 
 const ChatPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
+  const navigate = useNavigate();   
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
 
     if (user?._id) {
-      connectSocket();
-      addUser(user._id);
+      // connectSocket();
+      connectSocket(user._id);
       console.log("Socket connected");
     }
   }, []);
 
-  // 🔥 MAIN FIX
   const handleSelectUser = async (user) => {
     try {
       const res = await api.post("/chats/access", {
         receiverId: user._id,
       });
 
-      // 👇 chatId attach karo
       setSelectedUser({
         ...user,
         chatId: res.data._id,
@@ -36,9 +36,16 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      
-      {/* 👇 yaha change */}
+    <div className="flex h-screen bg-gray-100 relative">
+
+      {/* 🔙 BACK BUTTON */}
+      <button
+        onClick={() => navigate("/")} 
+        className="absolute top-4 left-3  bg-white shadow px-3 py-2 rounded-full hover:bg-gray-200"
+      >
+        ←
+      </button>
+
       <UsersList onSelectUser={handleSelectUser} />
 
       {selectedUser ? (

@@ -7,7 +7,7 @@ const InvitationPage = () => {
   const [sent, setSent] = useState([]);
   const [received, setReceived] = useState([]);
 
-  // ✅ FETCH INVITES (normal API)
+  // FETCH INVITES 
   useEffect(() => {
     const fetchInvites = async () => {
       const { data } = await api.get("/invitations/all");
@@ -18,7 +18,7 @@ const InvitationPage = () => {
     fetchInvites();
   }, []);
 
-  // ✅ REAL-TIME SOCKET LISTENERS (ONLY LISTEN, NO CONNECT)
+  // REAL-TIME SOCKET LISTENERS 
   useEffect(() => {
     const handleNewInvitation = (invitation) => {
       setReceived((prev) => {
@@ -59,7 +59,7 @@ const InvitationPage = () => {
     };
   }, []);
 
-  // ✅ ACCEPT / REJECT
+  // ACCEPT / REJECT
   const updateStatus = async (id, type) => {
     await api.post(`/invitations/${id}/${type}`);
 

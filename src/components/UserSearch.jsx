@@ -43,14 +43,14 @@ const UserSearch = () => {
     }
   };
 
-  // ✅ UPDATED SEND INVITE (instant UI update)
+  // UPDATED SEND INVITE  
   const sendInvite = async (userId) => {
     try {
       await api.post("/invitations/send", {
         receiverIds: [userId],
       });
 
-      // 🔥 instant UI update
+      
       setInvites((prev) => [
         ...prev,
         {

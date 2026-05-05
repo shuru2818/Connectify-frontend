@@ -23,19 +23,24 @@ const ChatWindow = ({ selectedUser }) => {
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
-  // AUTO SCROLL
+  const formatTime = (date) => {
+    if (!date) return "";
+    return new Date(date).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // JOIN CHAT
   useEffect(() => {
     if (selectedUser?.chatId) {
       socket.emit("joinChat", selectedUser.chatId);
     }
   }, [selectedUser]);
 
-  // FETCH MESSAGES
   useEffect(() => {
     if (!selectedUser?.chatId) return;
 
@@ -51,7 +56,6 @@ const ChatWindow = ({ selectedUser }) => {
     fetchMessages();
   }, [selectedUser]);
 
-  // RECEIVE MESSAGE
   useEffect(() => {
     if (!selectedUser?.chatId) return;
 
@@ -68,27 +72,21 @@ const ChatWindow = ({ selectedUser }) => {
     return cleanup;
   }, [selectedUser]);
 
-  // TYPING LISTENER
-  useEffect(() => {
-    const offShow = onTyping((data) => {
-      if (data.senderId === selectedUser?._id) {
-        setIsTyping(true);
-      }
-    });
+ useEffect(() => {
+  const offShow = onTyping((data) => {
+    if (data.senderId === selectedUser?._id) setIsTyping(true);
+  });
 
-    const offHide = onStopTyping((data) => {
-      if (data.senderId === selectedUser?._id) {
-        setIsTyping(false);
-      }
-    });
+  const offHide = onStopTyping((data) => {
+    if (data.senderId === selectedUser?._id) setIsTyping(false);
+  });
 
-    return () => {
-      offShow();
-      offHide();
-    };
-  }, [selectedUser]);
+  return () => {
+    if (typeof offShow === "function") offShow();
+    if (typeof offHide === "function") offHide();
+  };
+}, [selectedUser]);
 
-  // MARK AS SEEN (FIXED)
   useEffect(() => {
     if (!selectedUser?.chatId || messages.length === 0) return;
 
@@ -97,21 +95,18 @@ const ChatWindow = ({ selectedUser }) => {
     if (lastMsg?.sender?._id !== currentUser._id) {
       markSeenSocket({
         chatId: selectedUser.chatId,
-        senderId: currentUser._id, // ✅ FIXED
+        senderId: currentUser._id,
       });
     }
   }, [messages, selectedUser]);
 
-  // UPDATE SEEN STATUS (FIXED)
   useEffect(() => {
     const cleanup = onMessagesSeen((data) => {
       if (data.chatId !== selectedUser?.chatId) return;
 
       setMessages((prev) =>
         prev.map((m) =>
-          m.chatId === data.chatId
-            ? { ...m, status: "read" }
-            : m
+          m.chatId === data.chatId ? { ...m, status: "read" } : m
         )
       );
     });
@@ -119,7 +114,6 @@ const ChatWindow = ({ selectedUser }) => {
     return cleanup;
   }, [selectedUser]);
 
-  // SEND MESSAGE
   const sendMessage = async () => {
     if (!text.trim() || !selectedUser?._id) return;
 
@@ -137,6 +131,7 @@ const ChatWindow = ({ selectedUser }) => {
         senderId: currentUser._id,
         content: res.data.content,
         status: res.data.status,
+        createdAt: res.data.createdAt,
       });
 
       setText("");
@@ -152,7 +147,6 @@ const ChatWindow = ({ selectedUser }) => {
     }
   };
 
-  // TYPING HANDLER
   const handleTyping = (e) => {
     setText(e.target.value);
 
@@ -178,27 +172,26 @@ const ChatWindow = ({ selectedUser }) => {
   return (
     <div className="flex flex-col w-2/3 h-screen">
 
-      {/* HEADER */}
       <div className="p-4 border-b bg-white">
         <h2 className="font-semibold text-lg">
           {selectedUser?.username || "Select a user"}
         </h2>
       </div>
 
-      {/* CHAT BODY */}
       <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
         {messages.map((msg) => (
           <div
             key={msg._id}
-            className={`mb-2 ${
-              msg.sender?._id === currentUser._id
-                ? "text-right"
-                : "text-left"
+            className={`mb-3 ${
+              msg.sender?._id === currentUser._id ? "text-right" : "text-left"
             }`}
           >
-            <p className="inline-block px-3 py-1 bg-white rounded shadow">
-              {msg.content}
-            </p>
+            <div className="inline-block px-3 py-1 bg-white rounded shadow">
+              <p>{msg.content}</p>
+              <p className="text-[10px] text-gray-400 mt-1">
+                {formatTime(msg.createdAt)}
+              </p>
+            </div>
 
             {msg.sender?._id === currentUser._id && (
               <div className="text-xs text-gray-500">
@@ -215,7 +208,6 @@ const ChatWindow = ({ selectedUser }) => {
         <div ref={chatEndRef} />
       </div>
 
-      {/* INPUT */}
       <div className="flex p-3 gap-2 border-t bg-white">
         <input
           value={text}

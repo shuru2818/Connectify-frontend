@@ -44,7 +44,7 @@ const UsersList = ({ onSelectUser }) => {
     <div className="w-1/3 h-screen border-r bg-gray-50 flex flex-col">
 
       <div className="p-4 border-b bg-white">
-        <h2 className="text-lg font-semibold">Chats</h2>
+        <h2 className="text-lg font-semibold ml-10">Chats</h2>
       </div>
 
       <div className="flex-1 overflow-y-auto">
