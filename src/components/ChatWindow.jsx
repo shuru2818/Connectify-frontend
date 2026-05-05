@@ -1,15 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
 import api from "../api/axios";
-import socket from "../socket.js";
 import {
-  sendMessageSocket,
-  markSeenSocket,
   typingSocket,
   stopTypingSocket,
   onReceiveMessage,
   onTyping,
   onStopTyping,
   onMessagesSeen,
+  joinChat,
 } from "../socket.js";
 
 const ChatWindow = ({ selectedUser }) => {
@@ -23,44 +21,36 @@ const ChatWindow = ({ selectedUser }) => {
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
-  const formatTime = (date) => {
-    if (!date) return "";
-    return new Date(date).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
+  // ✅ scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ✅ join chat
   useEffect(() => {
     if (selectedUser?.chatId) {
-      socket.emit("joinChat", selectedUser.chatId);
+      joinChat(selectedUser.chatId);
     }
   }, [selectedUser]);
 
+  // ✅ fetch messages
   useEffect(() => {
     if (!selectedUser?.chatId) return;
 
     const fetchMessages = async () => {
-      try {
-        const res = await api.get(`/message/${selectedUser.chatId}`);
-        setMessages(res.data);
-      } catch (err) {
-        console.error(err);
-      }
+      const res = await api.get(`/message/${selectedUser.chatId}`);
+      setMessages(res.data);
     };
 
     fetchMessages();
   }, [selectedUser]);
 
+  // ✅ receive message (NO DUPLICATE)
   useEffect(() => {
     if (!selectedUser?.chatId) return;
 
     const cleanup = onReceiveMessage((data) => {
-      if (data.chatId === selectedUser.chatId) {
+      if (data.chat === selectedUser.chatId) {
         setMessages((prev) => {
           const exists = prev.some((m) => m._id === data._id);
           if (exists) return prev;
@@ -72,41 +62,36 @@ const ChatWindow = ({ selectedUser }) => {
     return cleanup;
   }, [selectedUser]);
 
- useEffect(() => {
-  const offShow = onTyping((data) => {
-    if (data.senderId === selectedUser?._id) setIsTyping(true);
-  });
-
-  const offHide = onStopTyping((data) => {
-    if (data.senderId === selectedUser?._id) setIsTyping(false);
-  });
-
-  return () => {
-    if (typeof offShow === "function") offShow();
-    if (typeof offHide === "function") offHide();
-  };
-}, [selectedUser]);
-
+  // ✅ typing
   useEffect(() => {
-    if (!selectedUser?.chatId || messages.length === 0) return;
+    if (!selectedUser) return;
 
-    const lastMsg = messages[messages.length - 1];
+    const offShow = onTyping((data) => {
+      if (data.senderId === selectedUser._id) {
+        setIsTyping(true);
+      }
+    });
 
-    if (lastMsg?.sender?._id !== currentUser._id) {
-      markSeenSocket({
-        chatId: selectedUser.chatId,
-        senderId: currentUser._id,
-      });
-    }
-  }, [messages, selectedUser]);
+    const offHide = onStopTyping((data) => {
+      if (data.senderId === selectedUser._id) {
+        setIsTyping(false);
+      }
+    });
 
+    return () => {
+      if (offShow) offShow();
+      if (offHide) offHide();
+    };
+  }, [selectedUser]);
+
+  // ✅ seen
   useEffect(() => {
     const cleanup = onMessagesSeen((data) => {
       if (data.chatId !== selectedUser?.chatId) return;
 
       setMessages((prev) =>
         prev.map((m) =>
-          m.chatId === data.chatId ? { ...m, status: "read" } : m
+          m.chat === data.chatId ? { ...m, status: "read" } : m
         )
       );
     });
@@ -114,39 +99,26 @@ const ChatWindow = ({ selectedUser }) => {
     return cleanup;
   }, [selectedUser]);
 
+  // ✅ send message (FIXED ❌ DUPLICATE REMOVED)
   const sendMessage = async () => {
-    if (!text.trim() || !selectedUser?._id) return;
+    if (!text.trim()) return;
 
-    try {
-      const res = await api.post("/message/send", {
-        chatId: selectedUser.chatId,
-        content: text,
-      });
+    await api.post("/message/send", {
+      chatId: selectedUser.chatId,
+      content: text,
+    });
 
-      setMessages((prev) => [...prev, res.data]);
+    setText("");
 
-      sendMessageSocket({
-        _id: res.data._id,
-        chatId: selectedUser.chatId,
-        senderId: currentUser._id,
-        content: res.data.content,
-        status: res.data.status,
-        createdAt: res.data.createdAt,
-      });
+    stopTypingSocket({
+      senderId: currentUser._id,
+      receiverId: selectedUser._id,
+    });
 
-      setText("");
-
-      stopTypingSocket({
-        senderId: currentUser._id,
-        receiverId: selectedUser._id,
-      });
-
-      isTypingRef.current = false;
-    } catch (err) {
-      console.error(err);
-    }
+    isTypingRef.current = false;
   };
 
+  // ✅ typing handler
   const handleTyping = (e) => {
     setText(e.target.value);
 
@@ -171,25 +143,28 @@ const ChatWindow = ({ selectedUser }) => {
 
   return (
     <div className="flex flex-col w-2/3 h-screen">
-
+      {/* Header */}
       <div className="p-4 border-b bg-white">
         <h2 className="font-semibold text-lg">
-          {selectedUser?.username || "Select a user"}
+          {selectedUser?.username || "Select user"}
         </h2>
       </div>
 
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
         {messages.map((msg) => (
           <div
             key={msg._id}
             className={`mb-3 ${
-              msg.sender?._id === currentUser._id ? "text-right" : "text-left"
+              msg.sender?._id === currentUser._id
+                ? "text-right"
+                : "text-left"
             }`}
           >
             <div className="inline-block px-3 py-1 bg-white rounded shadow">
               <p>{msg.content}</p>
-              <p className="text-[10px] text-gray-400 mt-1">
-                {formatTime(msg.createdAt)}
+              <p className="text-xs text-gray-400">
+                {new Date(msg.createdAt).toLocaleTimeString()}
               </p>
             </div>
 
@@ -208,11 +183,12 @@ const ChatWindow = ({ selectedUser }) => {
         <div ref={chatEndRef} />
       </div>
 
+      {/* Input */}
       <div className="flex p-3 gap-2 border-t bg-white">
         <input
           value={text}
           onChange={handleTyping}
-          placeholder="Type a message..."
+          placeholder="Type message..."
           className="flex-1 border px-3 py-2 rounded"
         />
 
