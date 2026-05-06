@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import api from "../api/axios";
-import moment from "moment"
+import moment from "moment";
 import {
   typingSocket,
   stopTypingSocket,
@@ -11,7 +11,7 @@ import {
   joinChat,
   onMessageDeleted,
   deleteMessageSocket,
-  onMessageUpdated
+  onMessageUpdated,
 } from "../socket.js";
 
 const ChatWindow = ({ selectedUser, isOnline }) => {
@@ -34,10 +34,9 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
 
   // join chat
   useEffect(() => {
-    if (selectedUser?.chatId) {
-      joinChat(selectedUser.chatId);
-    }
-  }, [selectedUser]);
+    if (!selectedUser?.chatId) return;
+    joinChat(selectedUser.chatId);
+  }, [selectedUser?.chatId]);
 
   // fetch messages
   useEffect(() => {
@@ -49,24 +48,40 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     };
 
     fetchMessages();
-  }, [selectedUser]);
+  }, [selectedUser?.chatId]);
 
-  // receive message  
+  // receive message (🔥 FINAL FIX)
   useEffect(() => {
     if (!selectedUser?.chatId) return;
 
     const cleanup = onReceiveMessage((data) => {
-      if (data.chat === selectedUser.chatId) {
-        setMessages((prev) => {
-          const exists = prev.some((m) => m._id === data._id);
-          if (exists) return prev;
-          return [...prev, data];
-        });
-      }
+      if (data.chat !== selectedUser.chatId) return;
+
+      setMessages((prev) => {
+        // 🔥 STEP 1: try replacing temp message
+        const tempIndex = prev.findIndex(
+          (m) =>
+            m._id?.toString().startsWith("temp-") &&
+            m.sender?._id === data.sender?._id &&
+            m.content === data.content
+        );
+
+        if (tempIndex !== -1) {
+          const updated = [...prev];
+          updated[tempIndex] = data; // replace temp → real
+          return updated;
+        }
+
+        // 🔥 STEP 2: prevent duplicate real messages
+        const exists = prev.some((m) => m._id === data._id);
+        if (exists) return prev;
+
+        return [...prev, data];
+      });
     });
 
     return cleanup;
-  }, [selectedUser]);
+  }, [selectedUser?.chatId]);
 
   // typing
   useEffect(() => {
@@ -85,8 +100,8 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     });
 
     return () => {
-      if (offShow) offShow();
-      if (offHide) offHide();
+      offShow && offShow();
+      offHide && offHide();
     };
   }, [selectedUser]);
 
@@ -103,9 +118,9 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     });
 
     return cleanup;
-  }, [selectedUser]);
+  }, [selectedUser?.chatId]);
 
-  //message delete
+  // delete
   useEffect(() => {
     const cleanup = onMessageDeleted((data) => {
       setMessages((prev) =>
@@ -116,12 +131,14 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     return cleanup;
   }, []);
 
-  //edit
+  // edit
   useEffect(() => {
     const cleanup = onMessageUpdated((updatedMsg) => {
       setMessages((prev) =>
         prev.map((msg) =>
-          msg._id === updatedMsg._id ? { ...msg, ...updatedMsg, sender: msg.sender } : msg
+          msg._id === updatedMsg._id
+            ? { ...msg, ...updatedMsg, sender: msg.sender }
+            : msg
         )
       );
     });
@@ -129,76 +146,74 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     return cleanup;
   }, []);
 
-  // send message  
-   const sendMessage = async () => {
-  if (!text.trim() && !file) return;
+  // send message
+  const sendMessage = async () => {
+    if (!text.trim() && !file) return;
 
-  const formData = new FormData();
-  formData.append("chatId", selectedUser.chatId);
-  formData.append("content", text);
-  if (file) formData.append("file", file);
+    const formData = new FormData();
+    formData.append("chatId", selectedUser.chatId);
+    formData.append("content", text);
+    if (file) formData.append("file", file);
 
-  // 👇 OPTIMISTIC MESSAGE (IMPORTANT FIX)
-  const tempMessage = {
-    _id: Date.now(),
-    sender: { _id: currentUser._id },
-    chat: selectedUser.chatId,
-    content: text,
-    fileUrl: file ? URL.createObjectURL(file) : null,
-    type: file ? (file.type.startsWith("image") ? "image" : "file") : "text",
-    createdAt: new Date(),
-    status: "sent",
+    // 🔥 TEMP MESSAGE (FIXED)
+    const tempMessage = {
+      _id: "temp-" + Date.now(),
+      sender: { _id: currentUser._id },
+      chat: selectedUser.chatId,
+      content: text,
+      fileUrl: file ? URL.createObjectURL(file) : null,
+      type: file
+        ? file.type.startsWith("image")
+          ? "image"
+          : "file"
+        : "text",
+      createdAt: new Date(),
+      status: "sent",
+    };
+
+    setMessages((prev) => [...prev, tempMessage]);
+
+    await api.post("/message/send", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    setText("");
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    stopTypingSocket({
+      senderId: currentUser._id,
+      receiverId: selectedUser._id,
+    });
+
+    isTypingRef.current = false;
   };
 
-  setMessages((prev) => [...prev, tempMessage]);
-
-  await api.post("/message/send", formData, {
-    headers: { "Content-Type": "multipart/form-data" }
-  });
-
-  setText("");
-  setFile(null);
-  if (fileInputRef.current) fileInputRef.current.value = "";
-
-  stopTypingSocket({
-    senderId: currentUser._id,
-    receiverId: selectedUser._id,
-  });
-
-  isTypingRef.current = false;
-};
-
-  //delete
+  // delete
   const handleDelete = async (messageId) => {
     try {
       await api.delete(`/message/${messageId}`);
-
-      deleteMessageSocket({
-        messageId,
-        chatId: selectedUser.chatId,
-      });
-
+     
     } catch (err) {
       console.error(err);
     }
   };
 
-  //handleedit
+  // edit
   const handleEdit = async (messageId, oldText) => {
-  const newText = prompt("Edit message:", oldText);
+    const newText = prompt("Edit message:", oldText);
+    if (!newText?.trim()) return;
 
-  if (!newText || newText.trim() === "") return;
+    try {
+      await api.put(`/message/${messageId}`, {
+        content: newText,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-  try {
-    await api.put(`/message/${messageId}`, {
-      content: newText,
-    });
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-  //typing handler
+  // typing handler
   const handleTyping = (e) => {
     setText(e.target.value);
 
@@ -250,20 +265,32 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
             }`}
           >
             <div className="inline-block px-3 py-1 bg-white rounded shadow">
-
               <div className="flex flex-col">
                 {msg.type === "image" && (
-                  <img src={msg.fileUrl} alt="sent" className="max-w-[200px] rounded mb-2" />
+                  <img
+                    src={msg.fileUrl}
+                    alt="sent"
+                    className="max-w-[200px] rounded mb-2"
+                  />
                 )}
+
                 {msg.type === "file" && (
-                  <a href={msg.fileUrl} target="_blank" rel="noreferrer" className="text-blue-500 underline text-sm mb-2 block">
+                  <a
+                    href={msg.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-500 underline text-sm mb-2 block"
+                  >
                     📎 Download File
                   </a>
                 )}
+
                 <p className="flex items-center gap-1">
                   {msg.content}
                   {msg.edited && (
-                    <span className="text-[10px] text-gray-400">(edited)</span>
+                    <span className="text-[10px] text-gray-400">
+                      (edited)
+                    </span>
                   )}
                 </p>
               </div>
@@ -273,19 +300,21 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
               </p>
             </div>
 
-            
-
             {msg.sender?._id === currentUser._id && (
               <div className="flex gap-2 justify-end mt-1">
-
-                <button onClick={() => handleEdit(msg._id, msg.content)} className="text-blue-500 hover:scale-110 transition text-sm">
+                <button
+                  onClick={() => handleEdit(msg._id, msg.content)}
+                  className="text-blue-500 text-sm"
+                >
                   ✏️
                 </button>
 
-                <button onClick={() => handleDelete(msg._id)} className="text-red-500 hover:scale-110 transition text-sm">
+                <button
+                  onClick={() => handleDelete(msg._id)}
+                  className="text-red-500 text-sm"
+                >
                   🗑️
                 </button>
-
               </div>
             )}
 
@@ -293,9 +322,7 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
               <div className="text-xs text-gray-500">
                 {msg.status === "read" ? "✔✔" : "✔"}
               </div>
-              
             )}
-
           </div>
         ))}
 
@@ -308,8 +335,8 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
 
       {/* Input */}
       <div className="flex p-3 gap-2 border-t bg-white items-center">
-        <label className="cursor-pointer p-2 hover:bg-gray-100 rounded-full transition">
-          <span className="text-xl">📎</span>
+        <label className="cursor-pointer p-2">
+          📎
           <input
             type="file"
             ref={fileInputRef}
@@ -317,23 +344,29 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
             onChange={(e) => setFile(e.target.files[0])}
           />
         </label>
-        
+
         <input
           value={text}
           onChange={handleTyping}
           placeholder={file ? `File: ${file.name}` : "Type message..."}
-          className="flex-1 border px-3 py-2 rounded focus:outline-none"
+          className="flex-1 border px-3 py-2 rounded"
         />
 
         {file && (
-          <button onClick={() => { setFile(null); fileInputRef.current.value = ""; }} className="text-red-500 text-sm">
+          <button
+            onClick={() => {
+              setFile(null);
+              fileInputRef.current.value = "";
+            }}
+            className="text-red-500 text-sm"
+          >
             Cancel
           </button>
         )}
 
         <button
           onClick={sendMessage}
-          className="bg-blue-500 text-white px-4 py-2 rounded font-medium"
+          className="bg-blue-500 text-white px-4 py-2 rounded"
         >
           Send
         </button>
