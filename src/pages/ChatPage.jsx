@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";   // 👈 ADD THIS
+import { useNavigate } from "react-router-dom";    
 import UsersList from "../components/UsersList";
 import ChatWindow from "../components/ChatWindow";
-import { connectSocket } from "../socket";
+import { connectSocket, onOnlineUsers} from "../socket";
 import api from "../api/axios";
 
 const ChatPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+
   const navigate = useNavigate();   
 
   useEffect(() => {
@@ -19,16 +21,35 @@ const ChatPage = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const cleanup = onOnlineUsers((users) => {
+      setOnlineUsers(users);
+    });
+
+    return cleanup;
+  }, []);
+
+  useEffect(() => {
+    if (selectedUser) {
+      setSelectedUser((prev) => ({
+        ...prev,
+        isOnline: onlineUsers.includes(prev._id),
+      }));
+    }
+  }, [onlineUsers]);
+
   const handleSelectUser = async (user) => {
     try {
       const res = await api.post("/chats/access", {
         receiverId: user._id,
       });
 
+  const userRes = await api.get(`/users/${user._id}`);
       setSelectedUser({
-        ...user,
+        ...userRes.data,
         chatId: res.data._id,
       });
+      console.log("Clicked user:", user);
 
     } catch (err) {
       console.error("CHAT ERROR:", err);

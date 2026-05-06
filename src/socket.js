@@ -47,4 +47,9 @@ export const onMessagesSeen = (cb) => {
   return () => socket.off("messagesSeen", cb);
 };
 
+export const onOnlineUsers = (cb) => {
+  socket.on("onlineUsers", cb);
+  return () => socket.off("onlineUsers", cb);
+};
+
 export default socket;

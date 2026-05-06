@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import api from "../api/axios";
+import moment from "moment";
 import {
   typingSocket,
   stopTypingSocket,
@@ -32,6 +33,7 @@ const ChatWindow = ({ selectedUser }) => {
       joinChat(selectedUser.chatId);
     }
   }, [selectedUser]);
+  console.log("Selected user:", selectedUser);
 
   // ✅ fetch messages
   useEffect(() => {
@@ -45,7 +47,7 @@ const ChatWindow = ({ selectedUser }) => {
     fetchMessages();
   }, [selectedUser]);
 
-  // ✅ receive message (NO DUPLICATE)
+  // ✅ receive message  
   useEffect(() => {
     if (!selectedUser?.chatId) return;
 
@@ -99,7 +101,7 @@ const ChatWindow = ({ selectedUser }) => {
     return cleanup;
   }, [selectedUser]);
 
-  // ✅ send message (FIXED ❌ DUPLICATE REMOVED)
+  // ✅ send message  
   const sendMessage = async () => {
     if (!text.trim()) return;
 
@@ -146,8 +148,17 @@ const ChatWindow = ({ selectedUser }) => {
       {/* Header */}
       <div className="p-4 border-b bg-white">
         <h2 className="font-semibold text-lg">
-          {selectedUser?.username || "Select user"}
+          {selectedUser?.user?.username || "Select user"}
         </h2>
+        
+
+        <p className="text-sm text-gray-500">
+          {selectedUser?.isOnline
+            ? "🟢 Online"
+            : selectedUser?.user?.lastSeen
+            ? `Last seen at ${moment(selectedUser.lastSeen).fromNow()}`
+            : ""}
+        </p>
       </div>
 
       {/* Messages */}
