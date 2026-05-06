@@ -9,6 +9,9 @@ import {
   onStopTyping,
   onMessagesSeen,
   joinChat,
+  onMessageDeleted,
+  deleteMessageSocket,
+  onMessageUpdated
 } from "../socket.js";
 
 const ChatWindow = ({ selectedUser, isOnline }) => {
@@ -22,19 +25,19 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
-  // ✅ scroll
+  // scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ✅ join chat
+  // join chat
   useEffect(() => {
     if (selectedUser?.chatId) {
       joinChat(selectedUser.chatId);
     }
   }, [selectedUser]);
 
-  // ✅ fetch messages
+  // fetch messages
   useEffect(() => {
     if (!selectedUser?.chatId) return;
 
@@ -46,7 +49,7 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     fetchMessages();
   }, [selectedUser]);
 
-  // ✅ receive message  
+  // receive message  
   useEffect(() => {
     if (!selectedUser?.chatId) return;
 
@@ -63,7 +66,7 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     return cleanup;
   }, [selectedUser]);
 
-  // ✅ typing
+  // typing
   useEffect(() => {
     if (!selectedUser) return;
 
@@ -85,7 +88,7 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     };
   }, [selectedUser]);
 
-  // ✅ seen
+  // seen
   useEffect(() => {
     const cleanup = onMessagesSeen((data) => {
       if (data.chatId !== selectedUser?.chatId) return;
@@ -100,7 +103,31 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     return cleanup;
   }, [selectedUser]);
 
-  // ✅ send message  
+  //message delete
+  useEffect(() => {
+    const cleanup = onMessageDeleted((data) => {
+      setMessages((prev) =>
+        prev.filter((msg) => msg._id !== data.messageId)
+      );
+    });
+
+    return cleanup;
+  }, []);
+
+  //edit
+  useEffect(() => {
+    const cleanup = onMessageUpdated((updatedMsg) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === updatedMsg._id ? { ...msg, ...updatedMsg, sender: msg.sender } : msg
+        )
+      );
+    });
+
+    return cleanup;
+  }, []);
+
+  // send message  
   const sendMessage = async () => {
     if (!text.trim()) return;
 
@@ -119,7 +146,37 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     isTypingRef.current = false;
   };
 
-  // ✅ typing handler
+  //delete
+  const handleDelete = async (messageId) => {
+    try {
+      await api.delete(`/message/${messageId}`);
+
+      deleteMessageSocket({
+        messageId,
+        chatId: selectedUser.chatId,
+      });
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  //handleedit
+  const handleEdit = async (messageId, oldText) => {
+  const newText = prompt("Edit message:", oldText);
+
+  if (!newText || newText.trim() === "") return;
+
+  try {
+    await api.put(`/message/${messageId}`, {
+      content: newText,
+    });
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+  //typing handler
   const handleTyping = (e) => {
     setText(e.target.value);
 
@@ -171,17 +228,49 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
             }`}
           >
             <div className="inline-block px-3 py-1 bg-white rounded shadow">
-              <p>{msg.content}</p>
+              <p className="flex items-center gap-1">
+                {msg.content}
+                {msg.edited && (
+                  <span className="text-[10px] text-gray-400">
+                    (edited)
+                  </span>
+                )}
+              </p>
+
               <p className="text-xs text-gray-400">
                 {new Date(msg.createdAt).toLocaleTimeString()}
               </p>
             </div>
 
+            
+
+            {msg.sender?._id === currentUser._id && (
+              <div className="flex gap-2 justify-end mt-1">
+
+                <button
+                  onClick={() => handleEdit(msg._id, msg.content)}
+                  className="text-blue-500 hover:scale-110 transition text-sm"
+                >
+                  ✏️
+                </button>
+
+                <button
+                  onClick={() => handleDelete(msg._id)}
+                  className="text-red-500 hover:scale-110 transition text-sm"
+                >
+                  🗑️
+                </button>
+
+              </div>
+            )}
+
             {msg.sender?._id === currentUser._id && (
               <div className="text-xs text-gray-500">
                 {msg.status === "read" ? "✔✔" : "✔"}
               </div>
+              
             )}
+
           </div>
         ))}
 

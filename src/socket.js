@@ -52,4 +52,18 @@ export const onOnlineUsers = (cb) => {
   return () => socket.off("onlineUsers", cb);
 };
 
+export const deleteMessageSocket = (data) => {
+  socket.emit("deleteMessage", data);
+};
+
+export const onMessageDeleted = (cb) => {
+  socket.on("messageDeleted", cb);
+  return () => socket.off("messageDeleted", cb);
+};
+
+export const onMessageUpdated = (callback) => {
+  socket.on("messageUpdated", callback);
+  return () => socket.off("messageUpdated", callback);
+};
+
 export default socket;
