@@ -29,14 +29,14 @@ const ChatPage = () => {
     return cleanup;
   }, []);
 
-  useEffect(() => {
-    if (selectedUser) {
-      setSelectedUser((prev) => ({
-        ...prev,
-        isOnline: onlineUsers.includes(prev._id),
-      }));
-    }
-  }, [onlineUsers]);
+  // useEffect(() => {
+  //   if (selectedUser) {
+  //     setSelectedUser((prev) => ({
+  //       ...prev,
+  //       isOnline: onlineUsers.includes(prev._id),
+  //     }));
+  //   }
+  // }, [onlineUsers]);
 
   const handleSelectUser = async (user) => {
     try {
@@ -46,7 +46,7 @@ const ChatPage = () => {
 
   const userRes = await api.get(`/users/${user._id}`);
       setSelectedUser({
-        ...userRes.data,
+        ...userRes.data.user,
         chatId: res.data._id,
       });
       console.log("Clicked user:", user);
@@ -70,7 +70,10 @@ const ChatPage = () => {
       <UsersList onSelectUser={handleSelectUser} />
 
       {selectedUser ? (
-        <ChatWindow selectedUser={selectedUser} />
+        <ChatWindow 
+        selectedUser={selectedUser}
+        isOnline={onlineUsers.includes(String(selectedUser?._id))}
+         />
       ) : (
         <div className="flex-1 flex items-center justify-center text-gray-500">
           Select a user to start chatting

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import api from "../api/axios";
-import moment from "moment";
+import moment from "moment"
 import {
   typingSocket,
   stopTypingSocket,
@@ -11,7 +11,7 @@ import {
   joinChat,
 } from "../socket.js";
 
-const ChatWindow = ({ selectedUser }) => {
+const ChatWindow = ({ selectedUser, isOnline }) => {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -33,7 +33,6 @@ const ChatWindow = ({ selectedUser }) => {
       joinChat(selectedUser.chatId);
     }
   }, [selectedUser]);
-  console.log("Selected user:", selectedUser);
 
   // ✅ fetch messages
   useEffect(() => {
@@ -148,15 +147,14 @@ const ChatWindow = ({ selectedUser }) => {
       {/* Header */}
       <div className="p-4 border-b bg-white">
         <h2 className="font-semibold text-lg">
-          {selectedUser?.user?.username || "Select user"}
+          {selectedUser?.username || "Select user"}
         </h2>
-        
 
         <p className="text-sm text-gray-500">
-          {selectedUser?.isOnline
+          {isOnline
             ? "🟢 Online"
-            : selectedUser?.user?.lastSeen
-            ? `Last seen at ${moment(selectedUser.lastSeen).fromNow()}`
+            : selectedUser?.lastSeen
+            ? `Last seen ${moment(selectedUser.lastSeen).fromNow()}`
             : ""}
         </p>
       </div>
