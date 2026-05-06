@@ -18,10 +18,12 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [file, setFile] = useState(null);
 
   const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
   const chatEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
@@ -128,23 +130,43 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
   }, []);
 
   // send message  
-  const sendMessage = async () => {
-    if (!text.trim()) return;
+   const sendMessage = async () => {
+  if (!text.trim() && !file) return;
 
-    await api.post("/message/send", {
-      chatId: selectedUser.chatId,
-      content: text,
-    });
+  const formData = new FormData();
+  formData.append("chatId", selectedUser.chatId);
+  formData.append("content", text);
+  if (file) formData.append("file", file);
 
-    setText("");
-
-    stopTypingSocket({
-      senderId: currentUser._id,
-      receiverId: selectedUser._id,
-    });
-
-    isTypingRef.current = false;
+  // 👇 OPTIMISTIC MESSAGE (IMPORTANT FIX)
+  const tempMessage = {
+    _id: Date.now(),
+    sender: { _id: currentUser._id },
+    chat: selectedUser.chatId,
+    content: text,
+    fileUrl: file ? URL.createObjectURL(file) : null,
+    type: file ? (file.type.startsWith("image") ? "image" : "file") : "text",
+    createdAt: new Date(),
+    status: "sent",
   };
+
+  setMessages((prev) => [...prev, tempMessage]);
+
+  await api.post("/message/send", formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+
+  setText("");
+  setFile(null);
+  if (fileInputRef.current) fileInputRef.current.value = "";
+
+  stopTypingSocket({
+    senderId: currentUser._id,
+    receiverId: selectedUser._id,
+  });
+
+  isTypingRef.current = false;
+};
 
   //delete
   const handleDelete = async (messageId) => {
@@ -228,14 +250,23 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
             }`}
           >
             <div className="inline-block px-3 py-1 bg-white rounded shadow">
-              <p className="flex items-center gap-1">
-                {msg.content}
-                {msg.edited && (
-                  <span className="text-[10px] text-gray-400">
-                    (edited)
-                  </span>
+
+              <div className="flex flex-col">
+                {msg.type === "image" && (
+                  <img src={msg.fileUrl} alt="sent" className="max-w-[200px] rounded mb-2" />
                 )}
-              </p>
+                {msg.type === "file" && (
+                  <a href={msg.fileUrl} target="_blank" rel="noreferrer" className="text-blue-500 underline text-sm mb-2 block">
+                    📎 Download File
+                  </a>
+                )}
+                <p className="flex items-center gap-1">
+                  {msg.content}
+                  {msg.edited && (
+                    <span className="text-[10px] text-gray-400">(edited)</span>
+                  )}
+                </p>
+              </div>
 
               <p className="text-xs text-gray-400">
                 {new Date(msg.createdAt).toLocaleTimeString()}
@@ -247,17 +278,11 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
             {msg.sender?._id === currentUser._id && (
               <div className="flex gap-2 justify-end mt-1">
 
-                <button
-                  onClick={() => handleEdit(msg._id, msg.content)}
-                  className="text-blue-500 hover:scale-110 transition text-sm"
-                >
+                <button onClick={() => handleEdit(msg._id, msg.content)} className="text-blue-500 hover:scale-110 transition text-sm">
                   ✏️
                 </button>
 
-                <button
-                  onClick={() => handleDelete(msg._id)}
-                  className="text-red-500 hover:scale-110 transition text-sm"
-                >
+                <button onClick={() => handleDelete(msg._id)} className="text-red-500 hover:scale-110 transition text-sm">
                   🗑️
                 </button>
 
@@ -282,17 +307,33 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
       </div>
 
       {/* Input */}
-      <div className="flex p-3 gap-2 border-t bg-white">
+      <div className="flex p-3 gap-2 border-t bg-white items-center">
+        <label className="cursor-pointer p-2 hover:bg-gray-100 rounded-full transition">
+          <span className="text-xl">📎</span>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={(e) => setFile(e.target.files[0])}
+          />
+        </label>
+        
         <input
           value={text}
           onChange={handleTyping}
-          placeholder="Type message..."
-          className="flex-1 border px-3 py-2 rounded"
+          placeholder={file ? `File: ${file.name}` : "Type message..."}
+          className="flex-1 border px-3 py-2 rounded focus:outline-none"
         />
+
+        {file && (
+          <button onClick={() => { setFile(null); fileInputRef.current.value = ""; }} className="text-red-500 text-sm">
+            Cancel
+          </button>
+        )}
 
         <button
           onClick={sendMessage}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          className="bg-blue-500 text-white px-4 py-2 rounded font-medium"
         >
           Send
         </button>
