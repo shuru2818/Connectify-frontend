@@ -29,14 +29,14 @@ const ChatPage = () => {
     return cleanup;
   }, []);
 
-  // useEffect(() => {
-  //   if (selectedUser) {
-  //     setSelectedUser((prev) => ({
-  //       ...prev,
-  //       isOnline: onlineUsers.includes(prev._id),
-  //     }));
-  //   }
-  // }, [onlineUsers]);
+  useEffect(() => {
+    if (selectedUser) {
+      setSelectedUser((prev) => ({
+        ...prev,
+        isOnline: onlineUsers.includes(prev._id),
+      }));
+    }
+  }, [onlineUsers]);
 
   const handleSelectUser = async (user) => {
     try {
