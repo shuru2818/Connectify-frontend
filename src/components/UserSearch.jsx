@@ -90,7 +90,7 @@ const UserSearch = () => {
   };
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full mt-5">
 
       {/* SEARCH INPUT */}
       <input
@@ -131,9 +131,14 @@ const UserSearch = () => {
                   {/* USER INFO */}
                   <div className="flex items-center gap-3">
 
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500 text-white flex items-center justify-center font-bold">
-                      {user.username?.charAt(0).toUpperCase()}
-                    </div>
+                    <img
+                      src={
+                        user.profilePic ||
+                        `https://ui-avatars.com/api/?name=${user.username}&background=random&color=fff`
+                      }
+                      alt={user.username}
+                      className="w-10 h-10 rounded-full object-cover border"
+                    />
 
                     <div>
                       <p className="font-semibold text-slate-800">

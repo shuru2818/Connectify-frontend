@@ -101,9 +101,28 @@ const UsersList = ({ onSelectUser }) => {
 
               <div className="flex items-center gap-3">
 
-                {/* USER AVATAR */}
-                <div className="w-10 h-10 bg-blue-500 text-white flex items-center justify-center rounded-full font-semibold">
-                  {user.username[0].toUpperCase()}
+                {/* PROFILE IMAGE */}
+                <div className="relative">
+
+                  <img
+                    src={
+                      user.profilePic
+                        ? user.profilePic
+                        : `https://ui-avatars.com/api/?name=${user.username}&background=random`
+                    }
+                    alt={user.username}
+                    className="w-12 h-12 rounded-full object-cover border border-gray-300"
+                  />
+
+                  {/* ONLINE DOT */}
+                  <span
+                    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                      onlineUsers.includes(user._id)
+                        ? "bg-green-500"
+                        : "bg-gray-400"
+                    }`}
+                  />
+
                 </div>
 
                 {/* USER NAME */}
@@ -111,18 +130,15 @@ const UsersList = ({ onSelectUser }) => {
                   <p className="font-medium text-gray-800">
                     {user.username}
                   </p>
+
+                  <p className="text-xs text-gray-500">
+                    {onlineUsers.includes(user._id)
+                      ? "Online"
+                      : "Offline"}
+                  </p>
                 </div>
 
               </div>
-
-              {/* ONLINE STATUS */}
-              <span
-                className={`w-3 h-3 rounded-full ${
-                  onlineUsers.includes(user._id)
-                    ? "bg-green-500"
-                    : "bg-gray-400"
-                }`}
-              />
 
             </div>
           ))

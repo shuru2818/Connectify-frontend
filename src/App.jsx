@@ -10,6 +10,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 import NotificationPage from "./pages/NotificationPage"
 import GroupChatPage from "./pages/GroupChatPage"
 import socket from "./socket"
+import Profile from "./pages/Profile"
 
 function App() {
 
@@ -39,6 +40,7 @@ function App() {
       <Route path="/invitation" element={<ProtectedRoute><InvitationPage/></ProtectedRoute>}></Route>
       <Route path="/notifications" element={<ProtectedRoute><NotificationPage/></ProtectedRoute>}></Route>
       <Route path="/groupchat" element={<ProtectedRoute><GroupChatPage/></ProtectedRoute>}></Route>
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>}></Route>
        
     </Routes>
 

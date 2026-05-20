@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import UserSearch from "../components/UserSearch";
 import { getNotifications } from "../api/notification";
+import Profile from "../pages/Profile.jsx"
 
 const Home = () => {
   let user = null;
@@ -102,22 +103,70 @@ const Home = () => {
                 e.stopPropagation();
                 setOpenMenu(!openMenu);
               }}
-              className="px-4 py-2 rounded-full bg-white shadow font-bold text-slate-700 hover:text-indigo-600 transition"
+              className="flex items-center gap-3 px-3 py-2 rounded-full bg-white shadow font-bold text-slate-700 hover:shadow-md transition"
             >
-              👋 {user.username}
+
+              {/* PROFILE IMAGE */}
+              <img
+                src={
+                  user.profilePic ||
+                  `https://ui-avatars.com/api/?name=${user.username}&background=random&color=fff`
+                }
+                alt="profile"
+                className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500"
+              />
+
+              {/* USERNAME */}
+              <span>
+                {user.username}
+              </span>
+
             </button>
 
             {openMenu && (
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="absolute right-0 mt-3 w-40 bg-white border border-slate-100 shadow-xl rounded-2xl overflow-hidden"
+                className="absolute right-0 mt-3 w-56 bg-white border border-slate-100 shadow-2xl rounded-2xl overflow-hidden z-50"
               >
+
+                {/* PROFILE */}
+                <button
+                  onClick={() => {
+                    navigate("/profile");
+                    setOpenMenu(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 transition"
+                >
+
+                  <img
+                    src={
+                      user.profilePic ||
+                      `https://ui-avatars.com/api/?name=${user.username}&background=random&color=fff`
+                    }
+                    alt="profile"
+                    className="w-11 h-11 rounded-full object-cover"
+                  />
+
+                  <div className="text-left">
+                    <p className="font-semibold text-slate-800">
+                      {user.username}
+                    </p>
+
+                    <p className="text-xs text-slate-400">
+                      View Profile
+                    </p>
+                  </div>
+
+                </button>
+
+                {/* LOGOUT */}
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 font-semibold transition"
+                  className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 font-semibold transition border-t"
                 >
                   Logout
                 </button>
+
               </div>
             )}
 
@@ -193,38 +242,6 @@ const Home = () => {
 
             </div>
 
-            {/* STATS */}
-            <div className="grid grid-cols-3 gap-5 mt-14">
-
-              <div className="bg-white/70 backdrop-blur-lg p-5 rounded-3xl shadow-md">
-                <h2 className="text-3xl font-black text-indigo-600">
-                  100+
-                </h2>
-                <p className="text-slate-500 mt-1">
-                  Active Users
-                </p>
-              </div>
-
-              <div className="bg-white/70 backdrop-blur-lg p-5 rounded-3xl shadow-md">
-                <h2 className="text-3xl font-black text-indigo-600">
-                  99.9%
-                </h2>
-                <p className="text-slate-500 mt-1">
-                  Delivery Speed
-                </p>
-              </div>
-
-              <div className="bg-white/70 backdrop-blur-lg p-5 rounded-3xl shadow-md">
-                <h2 className="text-3xl font-black text-indigo-600">
-                  24/7
-                </h2>
-                <p className="text-slate-500 mt-1">
-                  Uptime
-                </p>
-              </div>
-
-            </div>
-
           </div>
 
           {/* RIGHT CHAT PREVIEW */}
@@ -270,19 +287,6 @@ const Home = () => {
                   </div>
                 </div>
 
-                <div className="flex">
-                  <div className="bg-slate-100 px-5 py-3 rounded-2xl rounded-bl-sm text-slate-700 max-w-xs shadow-sm">
-                    Realtime messaging looks amazing 🔥
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 text-slate-400 text-sm px-2">
-                  <span className="animate-bounce">●</span>
-                  <span className="animate-bounce delay-100">●</span>
-                  <span className="animate-bounce delay-200">●</span>
-                  typing...
-                </div>
-
               </div>
 
             </div>
@@ -290,55 +294,6 @@ const Home = () => {
           </div>
 
         </div>
-
-        {/* FEATURES */}
-        <section className="mt-28 grid md:grid-cols-3 gap-8">
-
-          <div className="bg-white p-8 rounded-[30px] shadow-xl hover:-translate-y-2 transition duration-300">
-            <div className="text-5xl mb-5">⚡</div>
-
-            <h2 className="text-2xl font-bold text-slate-800">
-              Realtime Messaging
-            </h2>
-
-            <p className="text-slate-500 mt-4 leading-7">
-              Instant communication powered by Socket.io
-              with smooth realtime updates.
-            </p>
-          </div>
-
-          <div className="bg-white p-8 rounded-[30px] shadow-xl hover:-translate-y-2 transition duration-300">
-            <div className="text-5xl mb-5">🔒</div>
-
-            <h2 className="text-2xl font-bold text-slate-800">
-              Secure Chats
-            </h2>
-
-            <p className="text-slate-500 mt-4 leading-7">
-              Protected messaging with authentication,
-              privacy, and safe communication.
-            </p>
-          </div>
-
-          <div className="bg-white p-8 rounded-[30px] shadow-xl hover:-translate-y-2 transition duration-300">
-            <div className="text-5xl mb-5">👥</div>
-
-            <h2 className="text-2xl font-bold text-slate-800">
-              Group Conversations
-            </h2>
-
-            <p className="text-slate-500 mt-4 leading-7">
-              Build communities, collaborate with teams,
-              and stay connected together.
-            </p>
-          </div>
-
-        </section>
-
-        {/* FOOTER */}
-        <footer className="mt-28 py-10 text-center text-slate-500 border-t border-slate-200">
-          © 2026 ChatApp • Built with MERN + Socket.io 🚀
-        </footer>
 
       </main>
 

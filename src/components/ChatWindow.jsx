@@ -242,7 +242,7 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
         <img
           src={
             selectedUser?.profilePic ||
-            "https://ui-avatars.com/api/?name=" + selectedUser?.username
+            `https://ui-avatars.com/api/?name=${selectedUser?.username}&background=random`
           }
           alt="profile"
           className="w-11 h-11 rounded-full object-cover border"
