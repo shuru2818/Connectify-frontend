@@ -50,7 +50,7 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     fetchMessages();
   }, [selectedUser?.chatId]);
 
-  // receive message (🔥 FINAL FIX)
+  // receive message  
   useEffect(() => {
     if (!selectedUser?.chatId) return;
 
@@ -58,7 +58,7 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
       if (data.chat !== selectedUser.chatId) return;
 
       setMessages((prev) => {
-        // 🔥 STEP 1: try replacing temp message
+        
         const tempIndex = prev.findIndex(
           (m) =>
             m._id?.toString().startsWith("temp-") &&
@@ -72,7 +72,6 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
           return updated;
         }
 
-        // 🔥 STEP 2: prevent duplicate real messages
         const exists = prev.some((m) => m._id === data._id);
         if (exists) return prev;
 
@@ -155,7 +154,6 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     formData.append("content", text);
     if (file) formData.append("file", file);
 
-    // 🔥 TEMP MESSAGE (FIXED)
     const tempMessage = {
       _id: "temp-" + Date.now(),
       sender: { _id: currentUser._id },
@@ -239,7 +237,16 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
   return (
     <div className="flex flex-col w-2/3 h-screen">
       {/* Header */}
-      <div className="p-4 border-b bg-white">
+      <div className="p-4 border-b bg-white flex items-center gap-3 shadow-sm">
+
+        <img
+          src={
+            selectedUser?.profilePic ||
+            "https://ui-avatars.com/api/?name=" + selectedUser?.username
+          }
+          alt="profile"
+          className="w-11 h-11 rounded-full object-cover border"
+        />
         <h2 className="font-semibold text-lg">
           {selectedUser?.username || "Select user"}
         </h2>
@@ -301,25 +308,25 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
             </div>
 
             {msg.sender?._id === currentUser._id && (
-              <div className="flex gap-2 justify-end mt-1">
+              <div className="flex gap-1 justify-end mt-1">
                 <button
                   onClick={() => handleEdit(msg._id, msg.content)}
-                  className="text-blue-500 text-sm"
+                  className="text-blue-500 text-[11px] hover:scale-110 transition"
                 >
                   ✏️
                 </button>
 
                 <button
                   onClick={() => handleDelete(msg._id)}
-                  className="text-red-500 text-sm"
+                  className="text-red-500 text-[11px] hover:scale-110 transition"
                 >
                   🗑️
                 </button>
               </div>
             )}
 
-            {msg.sender?._id === currentUser._id && (
-              <div className="text-xs text-gray-500">
+             {msg.sender?._id === currentUser._id && (
+              <div className="text-[10px] text-gray-400 mt-[2px]">
                 {msg.status === "read" ? "✔✔" : "✔"}
               </div>
             )}

@@ -5,6 +5,7 @@ const UserSearch = () => {
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState([]);
   const [invites, setInvites] = useState([]);
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     getInvites();
@@ -19,9 +20,9 @@ const UserSearch = () => {
     }
   };
 
-  // search users
+  // SEARCH USERS
   useEffect(() => {
-    if (!query) {
+    if (!query.trim()) {
       setUsers([]);
       return;
     }
@@ -43,14 +44,13 @@ const UserSearch = () => {
     }
   };
 
-  // UPDATED SEND INVITE  
+  // SEND INVITE
   const sendInvite = async (userId) => {
     try {
       await api.post("/invitations/send", {
         receiverIds: [userId],
       });
 
-      
       setInvites((prev) => [
         ...prev,
         {
@@ -64,7 +64,7 @@ const UserSearch = () => {
     }
   };
 
-  // status logic
+  // STATUS LOGIC
   const getStatus = (userId) => {
     const invite = invites.find(
       (i) =>
@@ -78,8 +78,11 @@ const UserSearch = () => {
     if (invite.status === "accepted") return "friends";
 
     if (invite.status === "rejected") {
-      const diff = Date.now() - new Date(invite.rejectedAt);
+      const diff =
+        Date.now() - new Date(invite.rejectedAt);
+
       if (diff < 86400000) return "rejected";
+
       return "invite";
     }
 
@@ -87,42 +90,68 @@ const UserSearch = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-6">
+    <div className="relative w-full">
+
+      {/* SEARCH INPUT */}
       <input
         type="text"
         placeholder="Search users..."
         value={query}
+        onFocus={() => setShowResults(true)}
+        onBlur={() => {
+          setTimeout(() => {
+            setShowResults(false);
+          }, 200);
+        }}
         onChange={(e) => setQuery(e.target.value)}
-        className="border p-2 w-full mb-3 rounded"
+        className="w-full h-12 px-4 rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-xl shadow-lg outline-none focus:ring-2 focus:ring-indigo-500"
       />
 
-      {query && (
-        <div className="border p-2 max-h-60 overflow-y-auto rounded bg-white">
+      {/* SEARCH RESULTS */}
+      {showResults && query && (
+        <div className="absolute top-14 left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-hidden max-h-72 overflow-y-auto z-50">
+
           {users.length === 0 ? (
-            <p className="text-gray-400 text-center">
+
+            <p className="text-gray-400 text-center py-5">
               No users found
             </p>
+
           ) : (
+
             users.map((user) => {
               const status = getStatus(user._id);
 
               return (
                 <div
                   key={user._id}
-                  className="flex justify-between items-center p-2 hover:bg-gray-50"
+                  className="flex justify-between items-center px-4 py-3 hover:bg-slate-50 transition border-b border-slate-100"
                 >
-                  <div>
-                    <p>{user.username}</p>
-                    <p className="text-sm text-gray-500">
-                      {user.email}
-                    </p>
+
+                  {/* USER INFO */}
+                  <div className="flex items-center gap-3">
+
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500 text-white flex items-center justify-center font-bold">
+                      {user.username?.charAt(0).toUpperCase()}
+                    </div>
+
+                    <div>
+                      <p className="font-semibold text-slate-800">
+                        {user.username}
+                      </p>
+
+                      <p className="text-sm text-slate-400">
+                        {user.email}
+                      </p>
+                    </div>
+
                   </div>
 
-                  {/* BUTTON UI */}
+                  {/* BUTTONS */}
                   {status === "invite" && (
                     <button
                       onClick={() => sendInvite(user._id)}
-                      className="bg-indigo-600 text-white px-3 py-1 rounded"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-xl text-sm font-medium transition"
                     >
                       Invite
                     </button>
@@ -131,29 +160,33 @@ const UserSearch = () => {
                   {status === "sent" && (
                     <button
                       disabled
-                      className="bg-gray-400 text-white px-3 py-1 rounded"
+                      className="bg-gray-300 text-white px-4 py-1.5 rounded-xl text-sm"
                     >
                       Sent
                     </button>
                   )}
 
                   {status === "friends" && (
-                    <span className="text-blue-500 text-sm">
+                    <span className="text-blue-500 text-sm font-medium">
                       Friends
                     </span>
                   )}
 
                   {status === "rejected" && (
-                    <span className="text-red-500 text-sm">
+                    <span className="text-red-500 text-sm font-medium">
                       Rejected
                     </span>
                   )}
+
                 </div>
               );
             })
+
           )}
+
         </div>
       )}
+
     </div>
   );
 };

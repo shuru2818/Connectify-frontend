@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import api from '../api/axios';
-import UserSearch from '../components/UserSearch';
-import { getNotifications } from '../api/notification';
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import UserSearch from "../components/UserSearch";
+import { getNotifications } from "../api/notification";
 
 const Home = () => {
   let user = null;
@@ -27,7 +26,7 @@ const Home = () => {
   const loadUnreadCount = async () => {
     try {
       const res = await getNotifications();
-      const unread = res.data.filter(n => !n.isRead).length;
+      const unread = res.data.filter((n) => !n.isRead).length;
       setUnreadCount(unread);
     } catch (err) {
       console.log(err);
@@ -38,7 +37,7 @@ const Home = () => {
     loadUnreadCount();
 
     const handleNewNotif = () => {
-      setUnreadCount(prev => prev + 1);
+      setUnreadCount((prev) => prev + 1);
     };
 
     const handleClickOutside = () => setOpenMenu(false);
@@ -53,20 +52,37 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-100 overflow-hidden">
 
-      <nav className="flex items-center justify-between px-8 py-4 bg-white shadow-sm border-b border-indigo-50">
+      {/* BACKGROUND BLURS */}
+      <div className="absolute top-0 left-0 w-72 h-72 bg-indigo-300 rounded-full blur-3xl opacity-20"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-300 rounded-full blur-3xl opacity-20"></div>
 
-        <div className="text-2xl font-black text-indigo-600 cursor-pointer">
+      {/* NAVBAR */}
+      <nav className="sticky top-0 z-50 flex items-center justify-between px-8 py-4 bg-white/70 backdrop-blur-xl border-b border-white/40 shadow-sm">
+
+        <div className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent cursor-pointer">
           CHATAPP
         </div>
 
-        <ul className="hidden md:flex space-x-8 font-semibold text-slate-500">
-          <li className="hover:text-indigo-600 cursor-pointer">Home</li>
-          <li className="hover:text-indigo-600 cursor-pointer"><Link to="/chat">DMs</Link></li>
-          <li className="hover:text-indigo-600 cursor-pointer"><Link to="/groupchat">Group Chat</Link></li>
-          <li className="hover:text-indigo-600 cursor-pointer"><Link to="/invitation">Invitation</Link></li>
-          <li className="hover:text-indigo-600 cursor-pointer flex items-center">
+        <ul className="hidden md:flex items-center space-x-8 font-semibold text-slate-600">
+          <li className="hover:text-indigo-600 transition cursor-pointer">
+            Home
+          </li>
+
+          <li className="hover:text-indigo-600 transition cursor-pointer">
+            <Link to="/chat">DMs</Link>
+          </li>
+
+          <li className="hover:text-indigo-600 transition cursor-pointer">
+            <Link to="/groupchat">Group Chat</Link>
+          </li>
+
+          <li className="hover:text-indigo-600 transition cursor-pointer">
+            <Link to="/invitation">Invitation</Link>
+          </li>
+
+          <li className="hover:text-indigo-600 transition cursor-pointer flex items-center">
             <Link to="/notifications">Notification</Link>
 
             {unreadCount > 0 && (
@@ -86,19 +102,19 @@ const Home = () => {
                 e.stopPropagation();
                 setOpenMenu(!openMenu);
               }}
-              className="font-bold text-slate-700 hover:text-indigo-600"
+              className="px-4 py-2 rounded-full bg-white shadow font-bold text-slate-700 hover:text-indigo-600 transition"
             >
-              {user.username}
+              👋 {user.username}
             </button>
 
             {openMenu && (
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="absolute right-0 mt-2 w-36 bg-white border shadow-lg rounded-md z-50"
+                className="absolute right-0 mt-3 w-40 bg-white border border-slate-100 shadow-xl rounded-2xl overflow-hidden"
               >
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 font-semibold"
+                  className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 font-semibold transition"
                 >
                   Logout
                 </button>
@@ -107,56 +123,225 @@ const Home = () => {
 
           </div>
         ) : (
-          <div className="flex items-center space-x-5">
+          <div className="flex items-center space-x-4">
+
             <button
               onClick={() => navigate("/login")}
-              className="text-slate-600 font-bold hover:text-indigo-600"
+              className="font-bold text-slate-600 hover:text-indigo-600 transition"
             >
               Login
             </button>
 
             <button
               onClick={() => navigate("/signup")}
-              className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-full hover:bg-indigo-700"
+              className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-500 text-white font-bold rounded-full shadow-lg hover:scale-105 transition"
             >
               Sign Up
             </button>
+
           </div>
         )}
 
       </nav>
 
-      <main className="max-w-6xl mx-auto flex flex-col items-center text-center mt-10 px-4">
+      {/* HERO SECTION */}
+      <main className="relative max-w-7xl mx-auto px-6 pt-32 pb-20">
 
-        <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900">
-          Communication made <span className="text-indigo-600">effortless.</span>
-        </h1>
-
-        <p className="text-lg text-slate-500 mt-2 max-w-2xl">
-          Experience next-gen chatting. Secure, fast, and built for communities.
-        </p>
-
-        <div className="mt-6 flex space-x-4">
-          <button
-            onClick={() => navigate("/chat")}
-            className="px-8 py-3 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700"
-          >
-            Start Chatting
-          </button>
-
-          <button
-            onClick={() => navigate("/features")}
-            className="px-8 py-3 bg-white text-indigo-600 border-2 border-indigo-600 rounded-full font-bold hover:bg-indigo-50"
-          >
-            View Features
-          </button>
-        </div>
-
-        <div className="w-full mt-10">
+        {/* USER SEARCH */}
+        <div className="absolute top-0 right-6 z-40 w-[320px]">
           <UserSearch />
         </div>
 
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+
+          {/* LEFT */}
+          <div>
+
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 font-semibold text-sm mb-6">
+              ⚡ Next Generation Messaging Platform
+            </div>
+
+            <h1 className="text-6xl md:text-7xl font-black leading-[1.05] tracking-tight text-slate-900">
+              Chat Smarter,
+              <br />
+              <span className="bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
+                Connect Faster.
+              </span>
+            </h1>
+
+            <p className="text-lg text-slate-500 mt-8 max-w-2xl leading-8">
+              Experience realtime communication with secure messaging,
+              instant notifications, file sharing, group chats,
+              and modern collaboration tools built for everyone.
+            </p>
+
+            <div className="mt-10 flex flex-wrap gap-5">
+
+              <button
+                onClick={() => navigate("/chat")}
+                className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-500 text-white rounded-2xl font-bold shadow-xl hover:scale-105 transition"
+              >
+                Start Chatting
+              </button>
+
+              <button
+                onClick={() => navigate("/features")}
+                className="px-8 py-4 bg-white border border-slate-200 rounded-2xl font-bold text-slate-700 hover:shadow-lg transition"
+              >
+                View Features
+              </button>
+
+            </div>
+
+            {/* STATS */}
+            <div className="grid grid-cols-3 gap-5 mt-14">
+
+              <div className="bg-white/70 backdrop-blur-lg p-5 rounded-3xl shadow-md">
+                <h2 className="text-3xl font-black text-indigo-600">
+                  100+
+                </h2>
+                <p className="text-slate-500 mt-1">
+                  Active Users
+                </p>
+              </div>
+
+              <div className="bg-white/70 backdrop-blur-lg p-5 rounded-3xl shadow-md">
+                <h2 className="text-3xl font-black text-indigo-600">
+                  99.9%
+                </h2>
+                <p className="text-slate-500 mt-1">
+                  Delivery Speed
+                </p>
+              </div>
+
+              <div className="bg-white/70 backdrop-blur-lg p-5 rounded-3xl shadow-md">
+                <h2 className="text-3xl font-black text-indigo-600">
+                  24/7
+                </h2>
+                <p className="text-slate-500 mt-1">
+                  Uptime
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* RIGHT CHAT PREVIEW */}
+          <div className="relative">
+
+            <div className="bg-white/80 backdrop-blur-xl rounded-[35px] shadow-2xl p-6 border border-white/50">
+
+              {/* TOP */}
+              <div className="flex items-center justify-between border-b pb-4">
+
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500"></div>
+
+                  <div>
+                    <h3 className="font-bold text-slate-800">
+                      Team Chat
+                    </h3>
+
+                    <p className="text-sm text-green-500">
+                      ● Online
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-2xl">
+                  💬
+                </div>
+
+              </div>
+
+              {/* MESSAGES */}
+              <div className="space-y-4 mt-6">
+
+                <div className="flex">
+                  <div className="bg-slate-100 px-5 py-3 rounded-2xl rounded-bl-sm text-slate-700 max-w-xs shadow-sm">
+                    Hey 👋 How’s the project going?
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <div className="bg-gradient-to-r from-indigo-600 to-blue-500 text-white px-5 py-3 rounded-2xl rounded-br-sm max-w-xs shadow-lg">
+                    Everything working perfectly now 🚀
+                  </div>
+                </div>
+
+                <div className="flex">
+                  <div className="bg-slate-100 px-5 py-3 rounded-2xl rounded-bl-sm text-slate-700 max-w-xs shadow-sm">
+                    Realtime messaging looks amazing 🔥
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-slate-400 text-sm px-2">
+                  <span className="animate-bounce">●</span>
+                  <span className="animate-bounce delay-100">●</span>
+                  <span className="animate-bounce delay-200">●</span>
+                  typing...
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* FEATURES */}
+        <section className="mt-28 grid md:grid-cols-3 gap-8">
+
+          <div className="bg-white p-8 rounded-[30px] shadow-xl hover:-translate-y-2 transition duration-300">
+            <div className="text-5xl mb-5">⚡</div>
+
+            <h2 className="text-2xl font-bold text-slate-800">
+              Realtime Messaging
+            </h2>
+
+            <p className="text-slate-500 mt-4 leading-7">
+              Instant communication powered by Socket.io
+              with smooth realtime updates.
+            </p>
+          </div>
+
+          <div className="bg-white p-8 rounded-[30px] shadow-xl hover:-translate-y-2 transition duration-300">
+            <div className="text-5xl mb-5">🔒</div>
+
+            <h2 className="text-2xl font-bold text-slate-800">
+              Secure Chats
+            </h2>
+
+            <p className="text-slate-500 mt-4 leading-7">
+              Protected messaging with authentication,
+              privacy, and safe communication.
+            </p>
+          </div>
+
+          <div className="bg-white p-8 rounded-[30px] shadow-xl hover:-translate-y-2 transition duration-300">
+            <div className="text-5xl mb-5">👥</div>
+
+            <h2 className="text-2xl font-bold text-slate-800">
+              Group Conversations
+            </h2>
+
+            <p className="text-slate-500 mt-4 leading-7">
+              Build communities, collaborate with teams,
+              and stay connected together.
+            </p>
+          </div>
+
+        </section>
+
+        {/* FOOTER */}
+        <footer className="mt-28 py-10 text-center text-slate-500 border-t border-slate-200">
+          © 2026 ChatApp • Built with MERN + Socket.io 🚀
+        </footer>
+
       </main>
+
     </div>
   );
 };
