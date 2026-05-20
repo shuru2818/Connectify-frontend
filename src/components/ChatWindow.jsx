@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import api from "../api/axios";
 import moment from "moment";
+
 import {
   typingSocket,
   stopTypingSocket,
@@ -20,93 +21,121 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
   const [file, setFile] = useState(null);
 
   // PROFILE POPUP
-  const [showProfile, setShowProfile] = useState(false);
+  const [showProfile, setShowProfile] =
+    useState(false);
 
   const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const currentUser = JSON.parse(localStorage.getItem("user"));
+  const currentUser = JSON.parse(
+    localStorage.getItem("user")
+  );
 
-  // scroll
+  // AUTO SCROLL
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
   }, [messages]);
 
-  // join chat
+  // JOIN CHAT
   useEffect(() => {
     if (!selectedUser?.chatId) return;
 
     joinChat(selectedUser.chatId);
   }, [selectedUser?.chatId]);
 
-  // fetch messages
+  // FETCH MESSAGES
   useEffect(() => {
     if (!selectedUser?.chatId) return;
 
     const fetchMessages = async () => {
-      const res = await api.get(
-        `/message/${selectedUser.chatId}`
-      );
+      try {
+        const res = await api.get(
+          `/message/${selectedUser.chatId}`
+        );
 
-      setMessages(res.data);
+        setMessages(res.data);
+      } catch (err) {
+        console.log(err);
+      }
     };
 
     fetchMessages();
   }, [selectedUser?.chatId]);
 
-  // receive message
+  // RECEIVE MESSAGE
   useEffect(() => {
     if (!selectedUser?.chatId) return;
 
-    const cleanup = onReceiveMessage((data) => {
-      if (data.chat !== selectedUser.chatId) return;
+    const cleanup = onReceiveMessage(
+      (data) => {
+        if (
+          data.chat !==
+          selectedUser.chatId
+        )
+          return;
 
-      setMessages((prev) => {
-        const tempIndex = prev.findIndex(
-          (m) =>
-            m._id?.toString().startsWith("temp-") &&
-            m.sender?._id === data.sender?._id &&
-            m.content === data.content
-        );
+        setMessages((prev) => {
+          const tempIndex =
+            prev.findIndex(
+              (m) =>
+                m._id
+                  ?.toString()
+                  .startsWith("temp-") &&
+                m.sender?._id ===
+                  data.sender?._id &&
+                m.content ===
+                  data.content
+            );
 
-        if (tempIndex !== -1) {
-          const updated = [...prev];
-          updated[tempIndex] = data;
-          return updated;
-        }
+          if (tempIndex !== -1) {
+            const updated = [...prev];
+            updated[tempIndex] = data;
+            return updated;
+          }
 
-        const exists = prev.some(
-          (m) => m._id === data._id
-        );
+          const exists = prev.some(
+            (m) => m._id === data._id
+          );
 
-        if (exists) return prev;
+          if (exists) return prev;
 
-        return [...prev, data];
-      });
-    });
+          return [...prev, data];
+        });
+      }
+    );
 
     return cleanup;
   }, [selectedUser?.chatId]);
 
-  // typing
+  // TYPING
   useEffect(() => {
     if (!selectedUser) return;
 
-    const offShow = onTyping((data) => {
-      if (data.senderId === selectedUser._id) {
-        setIsTyping(true);
+    const offShow = onTyping(
+      (data) => {
+        if (
+          data.senderId ===
+          selectedUser._id
+        ) {
+          setIsTyping(true);
+        }
       }
-    });
+    );
 
-    const offHide = onStopTyping((data) => {
-      if (data.senderId === selectedUser._id) {
-        setIsTyping(false);
+    const offHide = onStopTyping(
+      (data) => {
+        if (
+          data.senderId ===
+          selectedUser._id
+        ) {
+          setIsTyping(false);
+        }
       }
-    });
+    );
 
     return () => {
       offShow && offShow();
@@ -114,38 +143,50 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     };
   }, [selectedUser]);
 
-  // seen
+  // SEEN
   useEffect(() => {
-    const cleanup = onMessagesSeen((data) => {
-      if (data.chatId !== selectedUser?.chatId)
-        return;
-
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.chat === data.chatId
-            ? { ...m, status: "read" }
-            : m
+    const cleanup = onMessagesSeen(
+      (data) => {
+        if (
+          data.chatId !==
+          selectedUser?.chatId
         )
-      );
-    });
+          return;
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.chat === data.chatId
+              ? {
+                  ...m,
+                  status: "read",
+                }
+              : m
+          )
+        );
+      }
+    );
 
     return cleanup;
   }, [selectedUser?.chatId]);
 
-  // delete
+  // DELETE
   useEffect(() => {
-    const cleanup = onMessageDeleted((data) => {
-      setMessages((prev) =>
-        prev.filter(
-          (msg) => msg._id !== data.messageId
-        )
-      );
-    });
+    const cleanup = onMessageDeleted(
+      (data) => {
+        setMessages((prev) =>
+          prev.filter(
+            (msg) =>
+              msg._id !==
+              data.messageId
+          )
+        );
+      }
+    );
 
     return cleanup;
   }, []);
 
-  // edit
+  // EDIT
   useEffect(() => {
     const cleanup = onMessageUpdated(
       (updatedMsg) => {
@@ -166,72 +207,88 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     return cleanup;
   }, []);
 
-  // send message
+  // SEND MESSAGE
   const sendMessage = async () => {
     if (!text.trim() && !file) return;
 
-    const formData = new FormData();
+    try {
+      const formData = new FormData();
 
-    formData.append(
-      "chatId",
-      selectedUser.chatId
-    );
+      formData.append(
+        "chatId",
+        selectedUser.chatId
+      );
 
-    formData.append("content", text);
+      formData.append(
+        "content",
+        text
+      );
 
-    if (file) {
-      formData.append("file", file);
-    }
-
-    const tempMessage = {
-      _id: "temp-" + Date.now(),
-      sender: { _id: currentUser._id },
-      chat: selectedUser.chatId,
-      content: text,
-      fileUrl: file
-        ? URL.createObjectURL(file)
-        : null,
-      type: file
-        ? file.type.startsWith("image")
-          ? "image"
-          : "file"
-        : "text",
-      createdAt: new Date(),
-      status: "sent",
-    };
-
-    setMessages((prev) => [
-      ...prev,
-      tempMessage,
-    ]);
-
-    await api.post(
-      "/message/send",
-      formData,
-      {
-        headers: {
-          "Content-Type":
-            "multipart/form-data",
-        },
+      if (file) {
+        formData.append(
+          "file",
+          file
+        );
       }
-    );
 
-    setText("");
-    setFile(null);
+      const tempMessage = {
+        _id: "temp-" + Date.now(),
+        sender: {
+          _id: currentUser._id,
+        },
+        chat: selectedUser.chatId,
+        content: text,
+        fileUrl: file
+          ? URL.createObjectURL(file)
+          : null,
+        type: file
+          ? file.type.startsWith(
+              "image"
+            )
+            ? "image"
+            : "file"
+          : "text",
+        createdAt: new Date(),
+        status: "sent",
+      };
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      setMessages((prev) => [
+        ...prev,
+        tempMessage,
+      ]);
+
+      await api.post(
+        "/message/send",
+        formData,
+        {
+          headers: {
+            "Content-Type":
+              "multipart/form-data",
+          },
+        }
+      );
+
+      setText("");
+      setFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value =
+          "";
+      }
+
+      stopTypingSocket({
+        senderId: currentUser._id,
+        receiverId:
+          selectedUser._id,
+      });
+
+      isTypingRef.current = false;
+    } catch (err) {
+      console.log(err);
     }
-
-    stopTypingSocket({
-      senderId: currentUser._id,
-      receiverId: selectedUser._id,
-    });
-
-    isTypingRef.current = false;
   };
 
-  // delete
+  // DELETE MESSAGE
   const handleDelete = async (
     messageId
   ) => {
@@ -240,11 +297,11 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
         `/message/${messageId}`
       );
     } catch (err) {
-      console.error(err);
+      console.log(err);
     }
   };
 
-  // edit
+  // EDIT MESSAGE
   const handleEdit = async (
     messageId,
     oldText
@@ -264,18 +321,19 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
         }
       );
     } catch (err) {
-      console.error(err);
+      console.log(err);
     }
   };
 
-  // typing
+  // HANDLE TYPING
   const handleTyping = (e) => {
     setText(e.target.value);
 
     if (!isTypingRef.current) {
       typingSocket({
         senderId: currentUser._id,
-        receiverId: selectedUser._id,
+        receiverId:
+          selectedUser._id,
       });
 
       isTypingRef.current = true;
@@ -288,8 +346,10 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
     typingTimeoutRef.current =
       setTimeout(() => {
         stopTypingSocket({
-          senderId: currentUser._id,
-          receiverId: selectedUser._id,
+          senderId:
+            currentUser._id,
+          receiverId:
+            selectedUser._id,
         });
 
         isTypingRef.current = false;
@@ -297,13 +357,15 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
   };
 
   return (
-    <div className="flex flex-col w-2/3 h-screen">
+    <div className="flex flex-col w-2/3 h-screen bg-white">
 
       {/* HEADER */}
       <div className="p-4 border-b bg-white flex items-center justify-between shadow-sm">
 
         <div
-          onClick={() => setShowProfile(true)}
+          onClick={() =>
+            setShowProfile(true)
+          }
           className="flex items-center gap-3 cursor-pointer"
         >
 
@@ -317,6 +379,7 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
           />
 
           <div className="flex flex-col">
+
             <h2 className="font-semibold text-lg leading-tight hover:text-blue-500 transition">
               {selectedUser?.username ||
                 "Select user"}
@@ -331,6 +394,7 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
                   ).fromNow()}`
                 : ""}
             </p>
+
           </div>
 
         </div>
@@ -351,34 +415,46 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
             }`}
           >
 
-            <div className="inline-block px-3 py-1 bg-white rounded shadow">
+            <div
+              className={`inline-block px-3 py-2 rounded-2xl shadow max-w-[75%] ${
+                msg.sender?._id ===
+                currentUser._id
+                  ? "bg-blue-500 text-white"
+                  : "bg-white text-black"
+              }`}
+            >
 
               <div className="flex flex-col">
 
-                {msg.type === "image" && (
+                {/* IMAGE */}
+                {msg.type ===
+                  "image" && (
                   <img
                     src={msg.fileUrl}
                     alt="sent"
-                    className="max-w-[200px] rounded mb-2"
+                    className="max-w-[220px] rounded-xl mb-2"
                   />
                 )}
 
-                {msg.type === "file" && (
+                {/* FILE */}
+                {msg.type ===
+                  "file" && (
                   <a
                     href={msg.fileUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-blue-500 underline text-sm mb-2 block"
+                    className="text-sm underline mb-2 block"
                   >
                     📎 Download File
                   </a>
                 )}
 
-                <p className="flex items-center gap-1">
+                {/* TEXT */}
+                <p className="break-words">
                   {msg.content}
 
                   {msg.edited && (
-                    <span className="text-[10px] text-gray-400">
+                    <span className="text-[10px] ml-1 opacity-70">
                       (edited)
                     </span>
                   )}
@@ -386,17 +462,40 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
 
               </div>
 
-              <p className="text-xs text-gray-400">
-                {new Date(
-                  msg.createdAt
-                ).toLocaleTimeString()}
-              </p>
+              {/* TIME */}
+              <div className="flex items-center justify-end gap-1 mt-1">
+
+                <p className="text-[10px] opacity-70">
+                  {new Date(
+                    msg.createdAt
+                  ).toLocaleTimeString(
+                    [],
+                    {
+                      hour: "2-digit",
+                      minute:
+                        "2-digit",
+                    }
+                  )}
+                </p>
+
+                {msg.sender?._id ===
+                  currentUser._id && (
+                  <span className="text-[11px]">
+                    {msg.status ===
+                    "read"
+                      ? "✔✔"
+                      : "✔"}
+                  </span>
+                )}
+
+              </div>
 
             </div>
 
+            {/* ACTIONS */}
             {msg.sender?._id ===
               currentUser._id && (
-              <div className="flex gap-1 justify-end mt-1">
+              <div className="flex gap-2 justify-end mt-1 mr-1">
 
                 <button
                   onClick={() =>
@@ -405,16 +504,18 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
                       msg.content
                     )
                   }
-                  className="text-blue-500 text-[11px] hover:scale-110 transition"
+                  className="text-blue-500 text-xs hover:scale-110 transition"
                 >
                   ✏️
                 </button>
 
                 <button
                   onClick={() =>
-                    handleDelete(msg._id)
+                    handleDelete(
+                      msg._id
+                    )
                   }
-                  className="text-red-500 text-[11px] hover:scale-110 transition"
+                  className="text-red-500 text-xs hover:scale-110 transition"
                 >
                   🗑️
                 </button>
@@ -422,18 +523,10 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
               </div>
             )}
 
-            {msg.sender?._id ===
-              currentUser._id && (
-              <div className="text-[10px] text-gray-400 mt-[2px]">
-                {msg.status === "read"
-                  ? "✔✔"
-                  : "✔"}
-              </div>
-            )}
-
           </div>
         ))}
 
+        {/* TYPING */}
         {isTyping && (
           <p className="text-sm text-gray-500 italic">
             typing...
@@ -447,7 +540,7 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
       {/* INPUT */}
       <div className="flex p-3 gap-2 border-t bg-white items-center">
 
-        <label className="cursor-pointer p-2">
+        <label className="cursor-pointer p-2 text-xl">
           📎
 
           <input
@@ -455,7 +548,9 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
             ref={fileInputRef}
             className="hidden"
             onChange={(e) =>
-              setFile(e.target.files[0])
+              setFile(
+                e.target.files[0]
+              )
             }
           />
 
@@ -469,7 +564,7 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
               ? `File: ${file.name}`
               : "Type message..."
           }
-          className="flex-1 border px-3 py-2 rounded"
+          className="flex-1 border px-4 py-3 rounded-2xl outline-none focus:border-blue-500"
         />
 
         {file && (
@@ -488,7 +583,7 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
 
         <button
           onClick={sendMessage}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          className="bg-blue-500 hover:bg-blue-600 transition text-white px-5 py-3 rounded-2xl"
         >
           Send
         </button>
@@ -497,77 +592,179 @@ const ChatWindow = ({ selectedUser, isOnline }) => {
 
       {/* PROFILE POPUP */}
       {showProfile && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3">
 
-          <div className="bg-white w-[350px] rounded-3xl overflow-hidden shadow-2xl relative">
+          <div className="bg-white w-[360px] max-h-[92vh] rounded-3xl overflow-y-auto shadow-2xl relative">
 
             {/* CLOSE */}
             <button
               onClick={() =>
                 setShowProfile(false)
               }
-              className="absolute top-4 right-4 text-gray-500 hover:text-red-500 text-xl"
+              className="absolute top-3 right-4 text-white text-xl z-10 hover:scale-110 transition"
             >
               ✕
             </button>
 
             {/* COVER */}
-            <div className="h-28 bg-gradient-to-r from-indigo-500 to-blue-500"></div>
+            <div className="h-24 bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-400 relative">
 
-            {/* PROFILE IMAGE */}
-            <div className="flex justify-center -mt-14">
+              {/* PROFILE IMAGE */}
+              <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
 
-              <img
-                src={
-                  selectedUser?.profilePic ||
-                  `https://ui-avatars.com/api/?name=${selectedUser?.username}&background=random`
-                }
-                alt=""
-                className="w-28 h-28 rounded-full border-4 border-white object-cover shadow-lg"
-              />
+                <img
+                  src={
+                    selectedUser?.profilePic ||
+                    `https://ui-avatars.com/api/?name=${selectedUser?.username}&background=random`
+                  }
+                  alt="profile"
+                  className="w-24 h-24 rounded-full border-4 border-white object-cover shadow-lg"
+                />
+
+              </div>
 
             </div>
 
-            {/* DETAILS */}
-            <div className="text-center p-6">
+            {/* CONTENT */}
+            <div className="pt-14 pb-5 px-4">
 
-              <h2 className="text-2xl font-bold text-slate-800">
-                {selectedUser?.username}
-              </h2>
+              {/* NAME */}
+              <div className="text-center">
 
-              <p className="text-slate-500 mt-1">
-                {selectedUser?.email}
-              </p>
+                <h2 className="text-xl font-bold text-slate-800">
+                  {selectedUser?.username}
+                </h2>
 
-              <div className="mt-5 space-y-3">
+                <p className="text-xs text-gray-500 mt-1">
+                  {isOnline
+                    ? "🟢 Online"
+                    : selectedUser?.lastSeen
+                    ? `Last seen ${moment(
+                        selectedUser.lastSeen
+                      ).fromNow()}`
+                    : "Offline"}
+                </p>
 
-                <div className="bg-slate-100 rounded-2xl p-3">
+              </div>
 
-                  <p className="text-xs text-slate-400">
-                    Status
-                  </p>
+              {/* ABOUT */}
+              <div className="mt-4 bg-slate-100 rounded-2xl p-3">
 
-                  <p className="font-semibold text-slate-700">
-                    {isOnline
-                      ? "🟢 Online"
-                      : "Offline"}
-                  </p>
+                <p className="text-[11px] text-slate-400 mb-1">
+                  About
+                </p>
 
-                </div>
+                <p className="text-slate-700 font-medium text-sm">
+                  {selectedUser?.about ||
+                    "Hey there! I am using ChatApp 👋"}
+                </p>
 
-                {selectedUser?.phone && (
-                  <div className="bg-slate-100 rounded-2xl p-3">
+              </div>
 
-                    <p className="text-xs text-slate-400">
+              {/* DETAILS */}
+              <div className="mt-3 space-y-2">
+
+                {/* PHONE */}
+                <div className="bg-slate-100 rounded-2xl p-3 flex items-center justify-between">
+
+                  <div>
+                    <p className="text-[11px] text-slate-400">
                       Phone
                     </p>
 
-                    <p className="font-semibold text-slate-700">
-                      {selectedUser.phone}
+                    <p className="font-semibold text-slate-700 text-sm">
+                      {selectedUser?.phone ||
+                        "Not available"}
+                    </p>
+                  </div>
+
+                  <span className="text-lg">
+                    📞
+                  </span>
+
+                </div>
+
+                {/* EMAIL */}
+                <div className="bg-slate-100 rounded-2xl p-3 flex items-center justify-between">
+
+                  <div className="overflow-hidden">
+                    <p className="text-[11px] text-slate-400">
+                      Email
                     </p>
 
+                    <p className="font-semibold text-slate-700 text-sm break-all">
+                      {selectedUser?.email}
+                    </p>
                   </div>
-                )}
+
+                  <span className="text-lg">
+                    ✉️
+                  </span>
+
+                </div>
+
+                {/* COMMON GROUPS */}
+                <div className="bg-slate-100 rounded-2xl p-3 flex items-center justify-between">
+
+                  <div>
+                    <p className="text-[11px] text-slate-400">
+                      Common Groups
+                    </p>
+
+                    <p className="font-semibold text-slate-700 text-sm">
+                      {
+                        selectedUser?.groups?.filter((group) =>
+                          currentUser?.groups?.includes(group)
+                        ).length || 0
+                      } Groups
+                    </p>
+                  </div>
+
+                  <span className="text-lg">
+                    👥
+                  </span>
+
+                </div>
+
+                {/* JOINED */}
+                <div className="bg-slate-100 rounded-2xl p-3 flex items-center justify-between">
+
+                  <div>
+                    <p className="text-[11px] text-slate-400">
+                      Joined
+                    </p>
+
+                    <p className="font-semibold text-slate-700 text-sm">
+                      {selectedUser?.createdAt
+                        ? moment(
+                            selectedUser.createdAt
+                          ).format(
+                            "DD MMM YYYY"
+                          )
+                        : "Recently"}
+                    </p>
+                  </div>
+
+                  <span className="text-lg">
+                    📅
+                  </span>
+
+                </div>
+
+              </div>
+
+              {/* BUTTONS */}
+              <div className="flex gap-2 mt-4">
+
+                <button 
+                  onClick={() => setShowProfile(false)}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2.5 rounded-2xl font-semibold text-sm transition">
+                  Message
+                </button>
+
+                <button className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-2xl font-semibold text-sm transition">
+                  Call
+                </button>
 
               </div>
 
