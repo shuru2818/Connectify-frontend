@@ -2,6 +2,7 @@ import React from 'react'
 import { useState } from 'react'
 import api from "../api/axios.js"
 import {useNavigate} from "react-router-dom"
+import GoogleLoginButton from '../components/GoogleLoginButton.jsx'
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -61,17 +62,36 @@ async function submitForm(e){
 function validate(){
 
   let newErrors = {};
+  
 
-  if(!formdata.username){
-    newErrors.username = "Name is Requireq";
-  }else if(formdata.username.length < 3){
-    newErrors.username = "Name must be of more than 3 characters"
+  if (!formdata.username) {
+  newErrors.username = "Name is Required";
+} else {
+  const username = formdata.username;
+
+  const usernameRegex =
+    /^[a-zA-Z][a-zA-Z0-9._-]{2,}$/;
+
+  if (!usernameRegex.test(username)) {
+    newErrors.username =
+      "Username must start with a letter and can contain letters, numbers, _ . - (min 3 chars)";
   }
+}
 
-  if(!formdata.email){
+
+
+  if (!formdata.email) {
     newErrors.email = "Email is Required";
-  }else if(!/\S+@\S+\.\S+/.test(formdata.email)){
-    newErrors.email = "Please Enter a valid email"
+  } else {
+    const email = formdata.email;
+
+    const emailFormat =
+      /^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    if (!emailFormat.test(email)) {
+      newErrors.email =
+        "Email must start with a letter and be a valid format";
+    }
   }
 
   if(!formdata.phone){
@@ -80,10 +100,19 @@ function validate(){
     newErrors.phone = "Please enter a valid phone number"
   }
 
-  if(!formdata.password){
+
+  if (!formdata.password) {
     newErrors.password = "Password is Required";
-  }else if(formdata.password.length < 6){
-    newErrors.password = "Password must be of 6 characters"
+  } else {
+    const password = formdata.password;
+
+    const strongPasswordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+\-=\[\]{};':"\\|,.<>\/?]).{6,}$/;
+
+    if (!strongPasswordRegex.test(password)) {
+      newErrors.password =
+        "Password must contain uppercase, lowercase, number & special character (min 6 chars)";
+    }
   }
 
   setErrors(newErrors);
@@ -93,11 +122,11 @@ function validate(){
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      
       <form 
         onSubmit={submitForm}
         className="w-full max-w-md bg-white p-8 rounded-xl shadow-md border border-gray-200 space-y-4"
       >
+      <img src='/public/chatapplogo.png' className='w-26 h-22 mx-auto'></img>
         <h2 className="text-2xl font-semibold text-gray-800 text-center mb-2">
           Create your account
         </h2>
@@ -156,6 +185,7 @@ function validate(){
         >
           Create Account
         </button>
+        <GoogleLoginButton/>
       </form>
     </div>
   )

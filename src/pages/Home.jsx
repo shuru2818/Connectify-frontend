@@ -63,7 +63,7 @@ const Home = () => {
       <nav className="sticky top-0 z-50 flex items-center justify-between px-8 py-4 bg-white/70 backdrop-blur-xl border-b border-white/40 shadow-sm">
 
         <div className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent cursor-pointer">
-          CHATAPP
+          Connectify
         </div>
 
         <ul className="hidden md:flex items-center space-x-8 font-semibold text-slate-600">
