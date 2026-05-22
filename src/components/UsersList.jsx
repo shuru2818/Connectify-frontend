@@ -1,51 +1,148 @@
 import React, { useEffect, useState } from "react";
 import api from "../api/axios";
-import socket, { connectSocket } from "../socket";
+import socket, {
+  connectSocket,
+  onReceiveMessage,
+} from "../socket";
 
-const UsersList = ({ onSelectUser }) => {
+const UsersList = ({
+  onSelectUser,
+  selectedUser,
+}) => {
+
   const [users, setUsers] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [search, setSearch] = useState("");
 
+  // ✅ UNSEEN MESSAGES
+  const [unseenMessages, setUnseenMessages] =
+    useState({});
+
+  // ✅ LAST MESSAGES
+  const [lastMessages, setLastMessages] =
+    useState({});
+
+  const currentUser = JSON.parse(
+    localStorage.getItem("user")
+  );
+
   // SOCKET CONNECT
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
+
+    const user = JSON.parse(
+      localStorage.getItem("user")
+    );
 
     connectSocket();
 
     socket.on("connect", () => {
+
       if (user) {
         socket.emit("addUser", user._id);
       }
+
     });
 
     return () => socket.off("connect");
+
   }, []);
 
-  // ONLINE USERS LISTENER
+  // ONLINE USERS
   useEffect(() => {
+
     socket.on("onlineUsers", (data) => {
       setOnlineUsers(data);
     });
 
-    return () => socket.off("onlineUsers");
+    return () =>
+      socket.off("onlineUsers");
+
   }, []);
+
+  // ✅ RECEIVE MESSAGE
+  useEffect(() => {
+
+    const cleanup = onReceiveMessage(
+      (data) => {
+
+        // ✅ FIND OTHER USER ID
+        const otherUserId =
+          data.sender?._id ===
+          currentUser._id
+            ? data.receiverId
+            : data.sender?._id;
+
+        // ✅ LAST MESSAGE UPDATE
+        setLastMessages((prev) => ({
+          ...prev,
+
+          [otherUserId]:
+            data.type === "image"
+              ? "📷 Photo"
+              : data.type === "file"
+              ? "📎 File"
+              : data.sender?._id ===
+                currentUser._id
+              ? `You: ${data.content}`
+              : data.content,
+        }));
+
+        // ✅ CURRENT CHAT OPEN
+        if (
+          selectedUser &&
+          data.sender?._id ===
+            selectedUser._id
+        ) {
+          return;
+        }
+
+        // ✅ ONLY FOR INCOMING MSG
+        if (
+          data.sender?._id !==
+          currentUser._id
+        ) {
+
+          setUnseenMessages((prev) => ({
+            ...prev,
+
+            [data.sender?._id]:
+              (prev[
+                data.sender?._id
+              ] || 0) + 1,
+          }));
+
+        }
+
+      }
+    );
+
+    return cleanup;
+
+  }, [selectedUser]);
 
   // FETCH USERS
   useEffect(() => {
+
     const fetchUsers = async () => {
+
       try {
+
         const res = await api.get(
-          `/users/search?query=${search || "a"}`
+          `/users/search?query=${
+            search || "a"
+          }`
         );
 
         setUsers(res.data.users);
+
       } catch (err) {
         console.log(err);
       }
+
     };
 
     fetchUsers();
+
   }, [search]);
 
   return (
@@ -76,7 +173,9 @@ const UsersList = ({ onSelectUser }) => {
             type="text"
             placeholder="Search users..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
             className="w-[92%] px-4 py-2 pl-10 text-sm rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
           />
 
@@ -93,15 +192,33 @@ const UsersList = ({ onSelectUser }) => {
 
         {users.length > 0 ? (
           users.map((user) => (
+
             <div
               key={user._id}
-              onClick={() => onSelectUser(user)}
-              className="flex items-center justify-between p-3 hover:bg-gray-100 cursor-pointer transition"
+              onClick={() => {
+
+                // ✅ RESET UNREAD
+                setUnseenMessages(
+                  (prev) => ({
+                    ...prev,
+                    [user._id]: 0,
+                  })
+                );
+
+                onSelectUser(user);
+              }}
+              className={`flex items-center justify-between p-3 cursor-pointer transition hover:bg-gray-100 ${
+                selectedUser?._id ===
+                user._id
+                  ? "bg-gray-100"
+                  : ""
+              }`}
             >
 
-              <div className="flex items-center gap-3">
+              {/* LEFT */}
+              <div className="flex items-center gap-3 overflow-hidden">
 
-                {/* PROFILE IMAGE */}
+                {/* PROFILE */}
                 <div className="relative">
 
                   <img
@@ -117,7 +234,9 @@ const UsersList = ({ onSelectUser }) => {
                   {/* ONLINE DOT */}
                   <span
                     className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-                      onlineUsers.includes(user._id)
+                      onlineUsers.includes(
+                        user._id
+                      )
                         ? "bg-green-500"
                         : "bg-gray-400"
                     }`}
@@ -125,27 +244,61 @@ const UsersList = ({ onSelectUser }) => {
 
                 </div>
 
-                {/* USER NAME */}
-                <div>
-                  <p className="font-medium text-gray-800">
+                {/* USER INFO */}
+                <div className="overflow-hidden max-w-[180px]">
+
+                  {/* USERNAME */}
+                  <p className="font-medium text-gray-800 truncate">
                     {user.username}
                   </p>
 
-                  <p className="text-xs text-gray-500">
-                    {onlineUsers.includes(user._id)
+                  {/* LAST MESSAGE */}
+                  <p className="text-xs text-gray-500 truncate">
+
+                    {lastMessages[user._id]
+                      ? lastMessages[
+                          user._id
+                        ]
+                      : onlineUsers.includes(
+                          user._id
+                        )
                       ? "Online"
                       : "Offline"}
+
                   </p>
+
                 </div>
 
               </div>
 
+              {/* RIGHT SIDE */}
+              <div className="flex flex-col items-end gap-1">
+
+                {/* UNREAD BADGE */}
+                {unseenMessages[user._id] >
+                  0 && (
+                  <div className="min-w-[22px] h-[22px] px-1 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-semibold">
+
+                    {
+                      unseenMessages[
+                        user._id
+                      ]
+                    }
+
+                  </div>
+                )}
+
+              </div>
+
             </div>
+
           ))
         ) : (
+
           <div className="flex items-center justify-center h-40 text-gray-400">
             No users found
           </div>
+
         )}
 
       </div>
