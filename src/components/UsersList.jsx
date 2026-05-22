@@ -88,10 +88,16 @@ const UsersList = ({
         }));
 
         // ✅ CURRENT CHAT OPEN
+        const isCurrentChatOpen =
+          selectedUser?._id ===
+          data.sender?._id;
+
+        // ✅ CHAT OPEN + TAB ACTIVE
+        // TOH UNREAD COUNT MAT BADHAO
         if (
-          selectedUser &&
-          data.sender?._id ===
-            selectedUser._id
+          isCurrentChatOpen &&
+          document.visibilityState ===
+            "visible"
         ) {
           return;
         }
