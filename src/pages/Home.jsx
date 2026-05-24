@@ -197,7 +197,7 @@ const Home = () => {
       <main className="relative max-w-7xl mx-auto px-6 pt-32 pb-24">
 
         {/* USER SEARCH */}
-        <div className="absolute top-10 right-6 z-50 w-[320px] rounded-[18px] border border-white/70 bg-white/90 shadow-2xl backdrop-blur-xl overflow-visible p-3 pb-5">
+        <div className="absolute top-10 right-60 z-50 w-[320px] rounded-[18px] border border-white/70 bg-white/90 shadow-2xl backdrop-blur-xl overflow-visible p-3 pb-5">
           <UserSearch />
         </div>
 

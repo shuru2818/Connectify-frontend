@@ -126,7 +126,7 @@ function validate(){
         onSubmit={submitForm}
         className="w-full max-w-md bg-white p-8 rounded-xl shadow-md border border-gray-200 space-y-4"
       >
-      <img src='/public/chatapplogo.png' className='w-26 h-22 mx-auto'></img>
+      <img src='/chatapplogo.png' className='w-26 h-22 mx-auto'></img>
         <h2 className="text-2xl font-semibold text-gray-800 text-center mb-2">
           Create your account
         </h2>
