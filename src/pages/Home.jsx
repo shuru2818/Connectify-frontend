@@ -53,7 +53,7 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-100 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-100 overflow-visible">
 
       {/* BACKGROUND BLURS */}
       <div className="absolute top-0 left-0 w-72 h-72 bg-indigo-300 rounded-full blur-3xl opacity-20"></div>
@@ -194,99 +194,123 @@ const Home = () => {
       </nav>
 
       {/* HERO SECTION */}
-      <main className="relative max-w-7xl mx-auto px-6 pt-32 pb-20">
+      <main className="relative max-w-7xl mx-auto px-6 pt-32 pb-24">
 
         {/* USER SEARCH */}
-        <div className="absolute top-0 right-6 z-40 w-[320px]">
+        <div className="absolute top-10 right-6 z-50 w-[320px] rounded-[18px] border border-white/70 bg-white/90 shadow-2xl backdrop-blur-xl overflow-visible p-3 pb-5">
           <UserSearch />
         </div>
 
         <div className="grid lg:grid-cols-2 gap-16 items-center">
 
           {/* LEFT */}
-          <div>
+          <div className="space-y-8">
 
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 font-semibold text-sm mb-6">
-              ⚡ Next Generation Messaging Platform
+            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 font-semibold text-sm shadow-sm shadow-indigo-100/80">
+              <span>⚡</span>
+              Next Generation Messaging Platform
             </div>
 
-            <h1 className="text-6xl md:text-7xl font-black leading-[1.05] tracking-tight text-slate-900">
-              Chat Smarter,
-              <br />
-              <span className="bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
-                Connect Faster.
-              </span>
-            </h1>
+            <div className="space-y-6">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl font-black leading-tight tracking-tight text-slate-900">
+                Chat Smarter,
+                <br />
+                <span className="bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
+                  collaborate with confidence.
+                </span>
+              </h1>
 
-            <p className="text-lg text-slate-500 mt-8 max-w-2xl leading-8">
-              Experience realtime communication with secure messaging,
-              instant notifications, file sharing, group chats,
-              and modern collaboration tools built for everyone.
-            </p>
+              <p className="text-lg text-slate-500 max-w-2xl leading-8">
+                Powerful messaging for teams and friends with responsive chat,
+                instant notifications, group collaboration, and thoughtful UI.
+              </p>
+            </div>
 
-            <div className="mt-10 flex flex-wrap gap-5">
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div className="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm hover:shadow-lg transition">
+                <p className="text-3xl">💬</p>
+                <p className="mt-4 font-semibold text-slate-900">Instant Chat</p>
+                <p className="mt-2 text-sm text-slate-500">Swift one-to-one messaging with polished layout.</p>
+              </div>
+              <div className="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm hover:shadow-lg transition">
+                <p className="text-3xl">🔔</p>
+                <p className="mt-4 font-semibold text-slate-900">Live Alerts</p>
+                <p className="mt-2 text-sm text-slate-500">Stay on top of invites and notifications instantly.</p>
+              </div>
+              <div className="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm hover:shadow-lg transition">
+                <p className="text-3xl">👥</p>
+                <p className="mt-4 font-semibold text-slate-900">Group Chat</p>
+                <p className="mt-2 text-sm text-slate-500">Organize conversations with teammates and friends.</p>
+              </div>
+            </div>
 
+            <div className="mt-8 flex flex-wrap gap-5">
               <button
                 onClick={() => navigate("/chat")}
-                className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-500 text-white rounded-2xl font-bold shadow-xl hover:scale-105 transition"
+                className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-500 text-white rounded-3xl font-bold shadow-xl hover:scale-105 transition"
               >
                 Start Chatting
               </button>
 
               <button
                 onClick={() => navigate("/features")}
-                className="px-8 py-4 bg-white border border-slate-200 rounded-2xl font-bold text-slate-700 hover:shadow-lg transition"
+                className="px-8 py-4 bg-white border border-slate-200 rounded-3xl font-bold text-slate-700 hover:shadow-lg transition"
               >
                 View Features
               </button>
-
             </div>
 
           </div>
 
           {/* RIGHT CHAT PREVIEW */}
           <div className="relative">
+            <div className="absolute inset-x-0 top-10 h-52 rounded-[40px] bg-gradient-to-r from-indigo-500/10 via-white to-blue-500/10 blur-3xl"></div>
 
-            <div className="bg-white/80 backdrop-blur-xl rounded-[35px] shadow-2xl p-6 border border-white/50">
+            <div className="relative bg-white/95 backdrop-blur-xl rounded-[35px] shadow-2xl p-6 border border-white/60">
 
-              {/* TOP */}
-              <div className="flex items-center justify-between border-b pb-4">
-
+              <div className="flex items-center justify-between border-b border-slate-200 pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500"></div>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-gradient-to-r from-indigo-600 to-blue-500 text-white text-xl shadow-lg">
+                    💬
+                  </div>
 
                   <div>
-                    <h3 className="font-bold text-slate-800">
+                    <h3 className="font-bold text-slate-900 text-lg">
                       Team Chat
                     </h3>
-
-                    <p className="text-sm text-green-500">
-                      ● Online
-                    </p>
+                    <p className="text-sm text-green-500">● Online</p>
                   </div>
                 </div>
 
-                <div className="text-2xl">
-                  💬
+                <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-600">
+                  Live Preview
                 </div>
-
               </div>
 
-              {/* MESSAGES */}
               <div className="space-y-4 mt-6">
-
                 <div className="flex">
-                  <div className="bg-slate-100 px-5 py-3 rounded-2xl rounded-bl-sm text-slate-700 max-w-xs shadow-sm">
-                    Hey 👋 How’s the project going?
+                  <div className="bg-slate-100 px-5 py-4 rounded-3xl rounded-bl-xl text-slate-700 max-w-xs shadow-sm">
+                    Hey 👋 How’s the project coming along today?
                   </div>
                 </div>
 
                 <div className="flex justify-end">
-                  <div className="bg-gradient-to-r from-indigo-600 to-blue-500 text-white px-5 py-3 rounded-2xl rounded-br-sm max-w-xs shadow-lg">
-                    Everything working perfectly now 🚀
+                  <div className="bg-gradient-to-r from-indigo-600 to-blue-500 text-white px-5 py-4 rounded-3xl rounded-br-xl max-w-xs shadow-xl">
+                    Everything is looking great ✅ Ready for the next update.
                   </div>
                 </div>
+              </div>
 
+              <div className="mt-6 rounded-[30px] bg-slate-50 p-5 border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between text-slate-700">
+                  <span className="font-semibold">Active members</span>
+                  <span className="text-sm text-slate-500">8 online</span>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {['AL','JM','SR','TU'].map((tag) => (
+                    <span key={tag} className="rounded-full bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">{tag}</span>
+                  ))}
+                </div>
               </div>
 
             </div>
@@ -296,6 +320,12 @@ const Home = () => {
         </div>
 
       </main>
+
+      <footer className="border-t border-slate-200 bg-white/80 backdrop-blur-xl py-4 text-center text-sm text-slate-500">
+        <p>
+          © {new Date().getFullYear()} Connectify. Built for seamless chat, groups, and notifications.
+        </p>
+      </footer>
 
     </div>
   );

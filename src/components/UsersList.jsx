@@ -1,314 +1,259 @@
 import React, { useEffect, useState } from "react";
 import api from "../api/axios";
-import socket, {
-  connectSocket,
-  onReceiveMessage,
-} from "../socket";
+import socket, { connectSocket, onReceiveMessage } from "../socket";
+import { useNavigate } from "react-router-dom";
 
-const UsersList = ({
-  onSelectUser,
-  selectedUser,
-}) => {
-
+const UsersList = ({ onSelectUser, selectedUser }) => {
   const [users, setUsers] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [search, setSearch] = useState("");
-
+  const navigate = useNavigate();
   // ✅ UNSEEN MESSAGES
-  const [unseenMessages, setUnseenMessages] =
-    useState({});
+  const [unseenMessages, setUnseenMessages] = useState({});
 
   // ✅ LAST MESSAGES
-  const [lastMessages, setLastMessages] =
-    useState({});
+  const [lastMessages, setLastMessages] = useState({});
 
-  const currentUser = JSON.parse(
-    localStorage.getItem("user")
-  );
+  const currentUser = JSON.parse(localStorage.getItem("user"));
 
   // SOCKET CONNECT
   useEffect(() => {
-
-    const user = JSON.parse(
-      localStorage.getItem("user")
-    );
+    const user = JSON.parse(localStorage.getItem("user"));
 
     connectSocket();
 
     socket.on("connect", () => {
-
       if (user) {
         socket.emit("addUser", user._id);
       }
-
     });
 
     return () => socket.off("connect");
-
   }, []);
 
   // ONLINE USERS
   useEffect(() => {
-
     socket.on("onlineUsers", (data) => {
       setOnlineUsers(data);
     });
 
-    return () =>
-      socket.off("onlineUsers");
-
+    return () => socket.off("onlineUsers");
   }, []);
 
   // ✅ RECEIVE MESSAGE
   useEffect(() => {
+    const cleanup = onReceiveMessage((data) => {
+      // ✅ FIND OTHER USER ID
+      const otherUserId =
+        data.sender?._id === currentUser._id
+          ? data.receiverId
+          : data.sender?._id;
 
-    const cleanup = onReceiveMessage(
-      (data) => {
+      // ✅ LAST MESSAGE UPDATE
+      setLastMessages((prev) => ({
+        ...prev,
 
-        // ✅ FIND OTHER USER ID
-        const otherUserId =
-          data.sender?._id ===
-          currentUser._id
-            ? data.receiverId
-            : data.sender?._id;
+        [otherUserId]:
+          data.type === "image"
+            ? "📷 Photo"
+            : data.type === "file"
+              ? "📎 File"
+              : data.sender?._id === currentUser._id
+                ? `You: ${data.content}`
+                : data.content,
+      }));
 
-        // ✅ LAST MESSAGE UPDATE
-        setLastMessages((prev) => ({
+      // ✅ CURRENT CHAT OPEN
+      const isCurrentChatOpen = selectedUser?._id === data.sender?._id;
+
+      // ✅ CHAT OPEN + TAB ACTIVE
+      // TOH UNREAD COUNT MAT BADHAO
+      if (isCurrentChatOpen && document.visibilityState === "visible") {
+        return;
+      }
+
+      // ✅ ONLY FOR INCOMING MSG
+      if (data.sender?._id !== currentUser._id) {
+        setUnseenMessages((prev) => ({
           ...prev,
 
-          [otherUserId]:
-            data.type === "image"
-              ? "📷 Photo"
-              : data.type === "file"
-              ? "📎 File"
-              : data.sender?._id ===
-                currentUser._id
-              ? `You: ${data.content}`
-              : data.content,
+          [data.sender?._id]: (prev[data.sender?._id] || 0) + 1,
         }));
-
-        // ✅ CURRENT CHAT OPEN
-        const isCurrentChatOpen =
-          selectedUser?._id ===
-          data.sender?._id;
-
-        // ✅ CHAT OPEN + TAB ACTIVE
-        // TOH UNREAD COUNT MAT BADHAO
-        if (
-          isCurrentChatOpen &&
-          document.visibilityState ===
-            "visible"
-        ) {
-          return;
-        }
-
-        // ✅ ONLY FOR INCOMING MSG
-        if (
-          data.sender?._id !==
-          currentUser._id
-        ) {
-
-          setUnseenMessages((prev) => ({
-            ...prev,
-
-            [data.sender?._id]:
-              (prev[
-                data.sender?._id
-              ] || 0) + 1,
-          }));
-
-        }
-
       }
-    );
+    });
 
     return cleanup;
-
   }, [selectedUser]);
 
   // FETCH USERS
   useEffect(() => {
-
     const fetchUsers = async () => {
-
       try {
-
-        const res = await api.get(
-          `/users/search?query=${
-            search || "a"
-          }`
-        );
+        const res = await api.get(`/users/search?query=${search || "a"}`);
 
         setUsers(res.data.users);
-
       } catch (err) {
         console.log(err);
       }
-
     };
 
     fetchUsers();
-
   }, [search]);
 
   return (
-    <div className="w-1/3 h-screen border-r bg-gray-50 flex flex-col">
+    <div className="w-[370px] h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 border-r border-slate-200 flex flex-col overflow-hidden relative">
+      {/* BACKGROUND BLUR */}
+      <div className="absolute top-0 left-0 w-72 h-72 bg-indigo-400/10 blur-3xl rounded-full"></div>
 
       {/* HEADER */}
-      <div className="p-4 border-b bg-white">
+      <div className="relative z-10 p-5 border-b border-slate-200 bg-white/70 backdrop-blur-xl">
+        {/* TOP */}
+        <div className="flex items-center justify-between mb-5">
+          {/* LEFT */}
+          <div className="flex items-center gap-3">
+            {/* BACK BUTTON */}
+            <button className="w-11 h-11 rounded-2xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 text-lg transition-all duration-300 hover:scale-105 active:scale-95" onClick={() => navigate(-1)}>
+              ←
+            </button>
 
-        {/* TOP ROW */}
-        <div className="flex items-center gap-2 mb-3">
-
-          {/* BACK BUTTON */}
-          <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition">
-            ←
-          </button>
-
-          {/* TITLE */}
-          <h2 className="text-lg font-semibold text-gray-800">
-            Chats
-          </h2>
-
+            {/* TITLE */}
+            <div>
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                Messages
+              </h2>
+            </div>
+          </div>
         </div>
 
         {/* SEARCH BAR */}
-        <div className="relative ml-2">
-
+        <div className="relative">
           <input
             type="text"
-            placeholder="Search users..."
+            placeholder="Search conversations..."
             value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
-            className="w-[92%] px-4 py-2 pl-10 text-sm rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-14 rounded-2xl bg-slate-100 border border-slate-200 pl-14 pr-5 text-sm text-slate-700 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
           />
 
-          <span className="absolute left-3 top-2.5 text-gray-400 text-sm">
+          {/* SEARCH ICON */}
+          <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
             🔍
           </span>
-
         </div>
-
       </div>
 
       {/* USERS LIST */}
-      <div className="flex-1 overflow-y-auto">
-
+      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
         {users.length > 0 ? (
-          users.map((user) => (
+          users.map((user) => {
+            const isSelected = selectedUser?._id === user._id;
 
-            <div
-              key={user._id}
-              onClick={() => {
+            const isOnline = onlineUsers.includes(user._id);
 
-                // ✅ RESET UNREAD
-                setUnseenMessages(
-                  (prev) => ({
+            return (
+              <div
+                key={user._id}
+                onClick={() => {
+                  // RESET UNREAD
+                  setUnseenMessages((prev) => ({
                     ...prev,
                     [user._id]: 0,
-                  })
-                );
+                  }));
 
-                onSelectUser(user);
-              }}
-              className={`flex items-center justify-between p-3 cursor-pointer transition hover:bg-gray-100 ${
-                selectedUser?._id ===
-                user._id
-                  ? "bg-gray-100"
-                  : ""
-              }`}
-            >
+                  onSelectUser(user);
+                }}
+                className={`group relative flex items-center justify-between p-4 rounded-3xl cursor-pointer transition-all duration-300 border overflow-hidden ${
+                  isSelected
+                    ? "bg-gradient-to-r from-indigo-500 to-blue-500 border-transparent shadow-2xl scale-[1.01]"
+                    : "bg-white border-slate-200 hover:shadow-lg hover:-translate-y-1 hover:bg-slate-50"
+                }`}
+              >
+                {/* LEFT SIDE */}
+                <div className="flex items-center gap-4 overflow-hidden">
+                  {/* PROFILE */}
+                  <div className="relative shrink-0">
+                    <img
+                      src={
+                        user.profilePic
+                          ? user.profilePic
+                          : `https://ui-avatars.com/api/?name=${user.username}&background=random`
+                      }
+                      alt={user.username}
+                      className={`w-14 h-14 rounded-2xl object-cover border-2 ${
+                        isSelected ? "border-white" : "border-slate-200"
+                      }`}
+                    />
 
-              {/* LEFT */}
-              <div className="flex items-center gap-3 overflow-hidden">
-
-                {/* PROFILE */}
-                <div className="relative">
-
-                  <img
-                    src={
-                      user.profilePic
-                        ? user.profilePic
-                        : `https://ui-avatars.com/api/?name=${user.username}&background=random`
-                    }
-                    alt={user.username}
-                    className="w-12 h-12 rounded-full object-cover border border-gray-300"
-                  />
-
-                  {/* ONLINE DOT */}
-                  <span
-                    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-                      onlineUsers.includes(
-                        user._id
-                      )
-                        ? "bg-green-500"
-                        : "bg-gray-400"
-                    }`}
-                  />
-
-                </div>
-
-                {/* USER INFO */}
-                <div className="overflow-hidden max-w-[180px]">
-
-                  {/* USERNAME */}
-                  <p className="font-medium text-gray-800 truncate">
-                    {user.username}
-                  </p>
-
-                  {/* LAST MESSAGE */}
-                  <p className="text-xs text-gray-500 truncate">
-
-                    {lastMessages[user._id]
-                      ? lastMessages[
-                          user._id
-                        ]
-                      : onlineUsers.includes(
-                          user._id
-                        )
-                      ? "Online"
-                      : "Offline"}
-
-                  </p>
-
-                </div>
-
-              </div>
-
-              {/* RIGHT SIDE */}
-              <div className="flex flex-col items-end gap-1">
-
-                {/* UNREAD BADGE */}
-                {unseenMessages[user._id] >
-                  0 && (
-                  <div className="min-w-[22px] h-[22px] px-1 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-semibold">
-
-                    {
-                      unseenMessages[
-                        user._id
-                      ]
-                    }
-
+                    {/* ONLINE STATUS */}
+                    <span
+                      className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-[3px] ${
+                        isSelected ? "border-indigo-500" : "border-white"
+                      } ${isOnline ? "bg-green-500" : "bg-slate-400"}`}
+                    />
                   </div>
+
+                  {/* USER INFO */}
+                  <div className="overflow-hidden">
+                    {/* NAME */}
+                    <h3
+                      className={`font-bold text-[15px] truncate ${
+                        isSelected ? "text-white" : "text-slate-800"
+                      }`}
+                    >
+                      {user.username}
+                    </h3>
+
+                    {/* LAST MESSAGE */}
+                    <p
+                      className={`text-sm truncate mt-1 max-w-[180px] ${
+                        isSelected ? "text-indigo-100" : "text-slate-500"
+                      }`}
+                    >
+                      {lastMessages[user._id]
+                        ? lastMessages[user._id]
+                        : isOnline
+                          ? "🟢 Online"
+                          : "⚫ Offline"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT SIDE */}
+                <div className="flex flex-col items-end justify-between gap-2">
+                
+                  {unseenMessages[user._id] > 0 && (
+                    <div className="min-w-[24px] h-[24px] px-1 rounded-full bg-rose-500 flex items-center justify-center text-white text-xs font-bold shadow-lg animate-pulse">
+                      {unseenMessages[user._id]}
+                    </div>
+                  )}
+                </div>
+
+                {/* ACTIVE GLOW */}
+                {isSelected && (
+                  <div className="absolute inset-0 rounded-3xl ring-2 ring-indigo-300/40"></div>
                 )}
-
               </div>
-
+            );
+          })
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-center px-6">
+            {/* ICON */}
+            <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center text-5xl shadow-inner mb-6">
+              💬
             </div>
 
-          ))
-        ) : (
+            {/* TEXT */}
+            <h3 className="text-2xl font-bold text-slate-700 mb-2">
+              No Users Found
+            </h3>
 
-          <div className="flex items-center justify-center h-40 text-gray-400">
-            No users found
+            <p className="text-slate-400 leading-7 max-w-[250px]">
+              Try searching with another name or invite more friends to start
+              chatting.
+            </p>
           </div>
-
         )}
-
       </div>
-
     </div>
   );
 };
