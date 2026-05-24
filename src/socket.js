@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:3200", {
+const socket = io("https://connectify-backend-4hav.onrender.com", {
   withCredentials: true,
   autoConnect: false,
 });
