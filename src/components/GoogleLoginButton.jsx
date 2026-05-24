@@ -8,7 +8,7 @@ const GoogleLoginButton = () => {
   const handleSuccess = async (credentialResponse) => {
     try {
       const res = await axios.post(
-        "http://localhost:3200/api/auth/google",
+        "https://connectify-backend-4hav.onrender.com/api/auth/google",
         {
           credential: credentialResponse.credential,
         }
