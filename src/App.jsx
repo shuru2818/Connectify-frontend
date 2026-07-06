@@ -11,6 +11,7 @@ import NotificationPage from "./pages/NotificationPage"
 import GroupChatPage from "./pages/GroupChatPage"
 import socket from "./socket"
 import Profile from "./pages/Profile"
+import VerifyOtp from "./pages/VerifyOtp"
 
 function App() {
 
@@ -35,6 +36,7 @@ function App() {
       <Route path="/" element={<Home/>}></Route>
       <Route path="/login" element={<Login/>}></Route>
       <Route path="/signup" element={<Signup/>}></Route>
+      <Route path="/verify-otp" element={<VerifyOtp/>}></Route>
       <Route path="/features" element={<ProtectedRoute><Features/></ProtectedRoute>}></Route>
       <Route path="/chat" element={<ProtectedRoute><ChatPage/></ProtectedRoute>}></Route>
       <Route path="/invitation" element={<ProtectedRoute><InvitationPage/></ProtectedRoute>}></Route>

@@ -44,9 +44,8 @@ async function submitForm(e){
 
   let response = await api.post("/auth/signup", formdata);
   if(response){
-    localStorage.setItem("token", response.data.token);
-    localStorage.setItem("user", JSON.stringify(response.data.user));
-    navigate("/");
+    localStorage.setItem("pendingVerificationEmail", response.data.user?.email || formdata.email);
+    navigate('/verify-otp', { state: { email: response.data.user?.email || formdata.email } });
   }
   }catch(err){
     console.log(err);

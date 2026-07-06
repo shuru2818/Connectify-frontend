@@ -1,7 +1,9 @@
 import axios from "axios";
-
+const isLocal = window.location.hostname === "localhost";
 const api = axios.create({
-  baseURL: "https://connectify-backend-4hav.onrender.com/api",
+  baseURL: isLocal
+    ? "http://localhost:3200/api"
+    : "https://connectify-backend-4hav.onrender.com/api",
   headers: {
     "Content-Type": "application/json"
   }
