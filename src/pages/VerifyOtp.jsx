@@ -6,7 +6,7 @@ const VerifyOtp = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [email, setEmail] = useState(
+  const [email] = useState(
     location.state?.email ||
     localStorage.getItem('pendingVerificationEmail') ||
     ''
@@ -15,16 +15,15 @@ const VerifyOtp = () => {
   const [otp, setOtp] = useState(new Array(6).fill(""));
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
   const inputsRef = useRef([]);
 
   useEffect(() => {
     if (!email) navigate('/signup');
   }, [email, navigate]);
 
-  // handle input change
-  const handleChange = (element, index) => {
-    const value = element.value.replace(/[^0-9]/g, '');
+  // handle change
+  const handleChange = (e, index) => {
+    const value = e.target.value.replace(/[^0-9]/g, "");
 
     if (!value) return;
 
@@ -32,13 +31,18 @@ const VerifyOtp = () => {
     newOtp[index] = value[0];
     setOtp(newOtp);
 
-    // move next
-    if (index < 5 && value) {
+    // auto next focus (SAFE)
+    if (index < 5 && inputsRef.current[index + 1]) {
       inputsRef.current[index + 1].focus();
+    }
+
+    // auto submit when complete
+    if (newOtp.join("").length === 6) {
+      handleVerify(newOtp.join(""));
     }
   };
 
-  // handle backspace
+  // backspace
   const handleKeyDown = (e, index) => {
     if (e.key === "Backspace") {
       const newOtp = [...otp];
@@ -46,34 +50,55 @@ const VerifyOtp = () => {
       if (otp[index]) {
         newOtp[index] = "";
         setOtp(newOtp);
-      } else if (index > 0) {
+      } else if (index > 0 && inputsRef.current[index - 1]) {
         inputsRef.current[index - 1].focus();
       }
     }
   };
 
-  const handleSubmit = async (e) => {
+  // paste support (IMPORTANT FIX)
+  const handlePaste = (e) => {
     e.preventDefault();
 
-    const finalOtp = otp.join("");
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/[^0-9]/g, "")
+      .slice(0, 6);
 
-    if (!finalOtp || finalOtp.length < 4) {
-      setError("Please enter full OTP");
+    const newOtp = pasted.split("");
+
+    setOtp(newOtp.concat(new Array(6 - newOtp.length).fill("")));
+
+    const nextIndex = Math.min(pasted.length, 5);
+    inputsRef.current[nextIndex]?.focus();
+  };
+
+  const handleVerify = async (finalOtp) => {
+    setError("");
+    setSuccess("");
+
+    if (finalOtp.length !== 6) {
+      setError("Please enter 6-digit OTP");
       return;
     }
 
     try {
-      await api.post('/auth/verify-otp', {
+      await api.post("/auth/verify-otp", {
         email: email.toLowerCase().trim(),
         otp: finalOtp,
       });
 
-      setSuccess('Email verified successfully');
+      setSuccess("Email verified successfully");
 
-      setTimeout(() => navigate('/'), 1200);
+      setTimeout(() => navigate("/"), 1200);
     } catch (err) {
-      setError(err.response?.data?.message || 'Verification failed');
+      setError(err.response?.data?.message || "Verification failed");
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    handleVerify(otp.join(""));
   };
 
   return (
@@ -88,31 +113,32 @@ const VerifyOtp = () => {
         </h2>
 
         <p className="text-center text-gray-500 text-sm">
-          Enter the 6-digit code sent to {email}
+          Enter 6-digit OTP sent to {email}
         </p>
 
         {/* OTP BOXES */}
         <div className="flex justify-center gap-2">
-          {otp.map((data, index) => (
+          {otp.map((value, index) => (
             <input
               key={index}
+              ref={(el) => (inputsRef.current[index] = el)}
               type="text"
               maxLength="1"
-              value={data}
-              ref={(el) => (inputsRef.current[index] = el)}
-              onChange={(e) => handleChange(e.target, index)}
+              value={value}
+              onChange={(e) => handleChange(e, index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
-              className="w-12 h-12 text-center text-xl border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onPaste={handlePaste}
+              className="w-12 h-12 text-center text-xl border rounded-md focus:ring-2 focus:ring-blue-500"
             />
           ))}
         </div>
 
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-        {success && <p className="text-green-600 text-sm text-center">{success}</p>}
+        {error && <p className="text-red-500 text-center">{error}</p>}
+        {success && <p className="text-green-600 text-center">{success}</p>}
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
+          className="w-full bg-blue-600 text-white py-2 rounded-md"
         >
           Verify OTP
         </button>
