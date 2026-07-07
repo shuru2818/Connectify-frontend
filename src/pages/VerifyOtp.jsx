@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import api from '../api/axios.js';
+import React, { useEffect, useState, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import api from "../api/axios.js";
 
 const VerifyOtp = () => {
   const navigate = useNavigate();
@@ -8,17 +8,17 @@ const VerifyOtp = () => {
 
   const [email] = useState(
     location.state?.email ||
-    localStorage.getItem('pendingVerificationEmail') ||
-    ''
+      localStorage.getItem("pendingVerificationEmail") ||
+      "",
   );
 
   const [otp, setOtp] = useState(new Array(6).fill(""));
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const inputsRef = useRef([]);
 
   useEffect(() => {
-    if (!email) navigate('/signup');
+    if (!email) navigate("/signup");
   }, [email, navigate]);
 
   // handle change
@@ -83,11 +83,12 @@ const VerifyOtp = () => {
     }
 
     try {
-      await api.post("/auth/verify-otp", {
+      const res = await api.post("/auth/verify-otp", {
         email: email.toLowerCase().trim(),
         otp: finalOtp,
       });
-
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
       setSuccess("Email verified successfully");
 
       setTimeout(() => navigate("/"), 1200);
@@ -103,14 +104,11 @@ const VerifyOtp = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md bg-white p-8 rounded-xl shadow-md space-y-6"
       >
-        <h2 className="text-2xl font-semibold text-center">
-          Verify OTP
-        </h2>
+        <h2 className="text-2xl font-semibold text-center">Verify OTP</h2>
 
         <p className="text-center text-gray-500 text-sm">
           Enter 6-digit OTP sent to {email}
